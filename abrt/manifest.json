@@ -1,0 +1,9 @@
+{
+	"version": 0,
+	"tools": {
+		"abrt": {
+			"label": "Problems",
+			"path": "abrt.html"
+		}
+	}
+}

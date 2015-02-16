@@ -1,0 +1,50 @@
+<head>
+    <title>Problems</title>
+    <meta charset="utf-8">
+    <link href="../base/cockpit.css" type="text/css" rel="stylesheet">
+    <script src="../base/jquery.js"></script>
+    <script src="../base/cockpit.js"></script>
+</head>
+<body>
+    <div class="container-fluid" style='max-width: 400px'>
+        <table id="problems">	
+            <tr>
+                <th>Time</th>
+                <th>Reason</th>
+                <th>Package</th>
+                <th>Image</th>
+                <th>Container</th>
+                <th>Count</th>
+            </tr>
+        </table>
+    </div>
+
+    <script>
+        window.onload = function () {
+            var service = cockpit.dbus('org.freedesktop.problems');
+            var problems = service.proxy('org.freedesktop.problems', '/org/freedesktop/problems');
+            /*
+               var problems = { GetAllProblems : function() { return ["foo", "blah"]; },
+                                GetInfo : function(id, elems) {
+                                            var ret = {};
+                                            elems.forEach(function(el) {
+                                                ret[el] = el;
+                                            });
+                                            return ret;
+                                    }
+                              };
+            */
+
+            problems.GetAllProblems().forEach(function(problem_id) {
+                    var problem_data = problems.GetInfo(problem_id, ["time", "reason", "package", "container_image", "container_uuid", "count"]);
+
+                    var row = "";
+                    for (elem in problem_data) {
+                    row += "<td>" + problem_data[elem] + "</td>";
+                    }
+
+                    $("#problems tr:last").after("<tr>" + row + "/tr>");
+                    });
+        }
+    </script>
+</body>
