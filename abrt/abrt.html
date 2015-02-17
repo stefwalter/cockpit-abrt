@@ -6,45 +6,65 @@
     <script src="../base/cockpit.js"></script>
 </head>
 <body>
-    <div class="container-fluid" style='max-width: 400px'>
-        <table id="problems">	
-            <tr>
-                <th>Time</th>
-                <th>Reason</th>
-                <th>Package</th>
-                <th>Image</th>
-                <th>Container</th>
-                <th>Count</th>
-            </tr>
+    <div class="container-fluid">
+        <table id="problems" class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Reason</th>
+                    <th>Package</th>
+                    <th>Image</th>
+                    <th>Container</th>
+                    <th>Count</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
         </table>
     </div>
 
     <script>
-        window.onload = function () {
-            var service = cockpit.dbus('org.freedesktop.problems');
-            var problems = service.proxy('org.freedesktop.problems', '/org/freedesktop/problems');
-            /*
-               var problems = { GetAllProblems : function() { return ["foo", "blah"]; },
-                                GetInfo : function(id, elems) {
-                                            var ret = {};
-                                            elems.forEach(function(el) {
-                                                ret[el] = el;
-                                            });
-                                            return ret;
-                                    }
-                              };
-            */
+        var required_elements = ["time", "reason", "package", "container_image", "container_uuid", "count"];
 
-            problems.GetAllProblems().forEach(function(problem_id) {
-                    var problem_data = problems.GetInfo(problem_id, ["time", "reason", "package", "container_image", "container_uuid", "count"]);
+        var service = cockpit.dbus('org.freedesktop.problems');
+        var problems = service.proxy('org.freedesktop.problems', '/org/freedesktop/problems');
 
-                    var row = "";
-                    for (elem in problem_data) {
-                    row += "<td>" + problem_data[elem] + "</td>";
-                    }
+        problems.wait(load_problems);
 
-                    $("#problems tr:last").after("<tr>" + row + "/tr>");
+        function load_problems() {
+            problems.GetAllProblems()
+                .done(function(args, options) {
+                    args.forEach(function(problem_id) {
+                        problems.GetInfo(problem_id, required_elements)
+                            .done(function(problem_data, options) {
+                                $("#problems tbody").append(problem_data_to_row(problem_data));
                     });
+                });
+            });
+        }
+
+        function problem_data_to_row(problem_data) {
+            var row = "";
+
+            required_elements.forEach(function(elem) {
+                row += "<td>" + format_problem_data(problem_data, elem) + "</td>";
+            });
+
+            return "<tr>" + row + "</tr>";
+        }
+
+        function format_problem_data(problem_data, elem) {
+            if (!problem_data.hasOwnProperty(elem)) {
+                return "";
+            }
+
+            var value = problem_data[elem];
+
+            if (elem == "time") {
+                return Date(parseInt(value) * 1000);
+            }
+
+            return value;
         }
     </script>
 </body>
