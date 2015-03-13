@@ -24,7 +24,7 @@
     </div>
 
     <script>
-        var required_elements = ["time", "reason", "package", "container_image", "container_uuid", "count"];
+        var required_elements = ["time", "reason", "package", "container_image", "container_id", "count"];
 
         var service = cockpit.dbus('org.freedesktop.problems');
         var problems = service.proxy('org.freedesktop.problems', '/org/freedesktop/problems');
