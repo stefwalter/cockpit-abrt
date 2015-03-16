@@ -61,7 +61,7 @@
             var value = problem_data[elem];
 
             if (elem == "time") {
-                return Date(parseInt(value) * 1000);
+                value = new Date(parseInt(value) * 1000).toLocaleString();
             }
 
             return value;
