@@ -35,7 +35,7 @@
             problems.GetAllProblems()
                 .done(function(args, options) {
                     args.forEach(function(problem_id) {
-                        problems.GetInfo(problem_id, required_elements)
+                        problems.GetProblemData(problem_id)
                             .done(function(problem_data, options) {
                                 $("#problems tbody").append(problem_data_to_row(problem_data));
                     });
@@ -58,7 +58,7 @@
                 return "";
             }
 
-            var value = problem_data[elem];
+            var value = problem_data[elem][2];
 
             if (elem == "time") {
                 value = new Date(parseInt(value) * 1000).toLocaleString();
