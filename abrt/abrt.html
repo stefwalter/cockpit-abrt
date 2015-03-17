@@ -2,69 +2,28 @@
     <title>Problems</title>
     <meta charset="utf-8">
     <link href="../base1/cockpit.css" type="text/css" rel="stylesheet">
-    <script src="../base1/jquery.js"></script>
-    <script src="../base1/cockpit.js"></script>
+    <link href="abrt.css" type="text/css" rel="stylesheet">
 </head>
 <body>
     <div class="container-fluid">
-        <table id="problems" class="table table-hover">
-            <thead>
-                <tr>
-                    <th>Time</th>
-                    <th>Reason</th>
-                    <th>Package</th>
-                    <th>Image</th>
-                    <th>Container</th>
-                    <th>Count</th>
-                </tr>
-            </thead>
-            <tbody>
-            </tbody>
-        </table>
+        <div class="panel panel-default">
+            <table id="problems" class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Reason</th>
+                        <th>Package</th>
+                        <th>Image</th>
+                        <th>Container</th>
+                        <th>Count</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
     </div>
-
-    <script>
-        var required_elements = ["time", "reason", "package", "container_image", "container_id", "count"];
-
-        var service = cockpit.dbus('org.freedesktop.problems');
-        var problems = service.proxy('org.freedesktop.problems', '/org/freedesktop/problems');
-
-        problems.wait(load_problems);
-
-        function load_problems() {
-            problems.GetAllProblems()
-                .done(function(args, options) {
-                    args.forEach(function(problem_id) {
-                        problems.GetProblemData(problem_id)
-                            .done(function(problem_data, options) {
-                                $("#problems tbody").append(problem_data_to_row(problem_data));
-                    });
-                });
-            });
-        }
-
-        function problem_data_to_row(problem_data) {
-            var row = "";
-
-            required_elements.forEach(function(elem) {
-                row += "<td>" + format_problem_data(problem_data, elem) + "</td>";
-            });
-
-            return "<tr>" + row + "</tr>";
-        }
-
-        function format_problem_data(problem_data, elem) {
-            if (!problem_data.hasOwnProperty(elem)) {
-                return "";
-            }
-
-            var value = problem_data[elem][2];
-
-            if (elem == "time") {
-                value = new Date(parseInt(value) * 1000).toLocaleString();
-            }
-
-            return value;
-        }
-    </script>
+    <script src="../base1/jquery.js"></script>
+    <script src="../base1/cockpit.js"></script>
+    <script src="abrt.js"></script>
 </body>

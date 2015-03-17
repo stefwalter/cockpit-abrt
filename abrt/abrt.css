@@ -1,0 +1,33 @@
+table
+{
+    font-size: 11px;
+}
+
+#problems > tbody > tr > td
+{
+    vertical-align: middle;
+}
+
+.detail
+{
+    vertical-align: top;
+}
+
+.detail_label
+{
+    color: #888;
+    padding-right: 20px;
+    padding-top: 5px;
+    text-align: right;
+}
+
+.detail_content
+{
+    padding-top: 5px;
+}
+
+
+.selected_problem
+{
+    background-color: #eee;
+}
