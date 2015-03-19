@@ -170,8 +170,9 @@ $( document ).ready( function() {
 
                 var problem_content = problem_data[elem][2];
 
-
                 if (problem_content.indexOf('\n') != -1) {
+                    problem_content = problem_content.replace(/</g, "&lt;");
+                    problem_content = problem_content.replace(/>/g, "&gt;");
                     problem_content = problem_content.replace(/\n/g, "<br>");
                     /* bold variable */
                     problem_content = problem_content.replace(/(<br>[^=]+=|^[^=]+=)/g, "<b>$1</b>");
@@ -187,6 +188,7 @@ $( document ).ready( function() {
 
             }
         }
+
         return text;
     }
 
