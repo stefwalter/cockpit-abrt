@@ -27,7 +27,7 @@ table
     vertical-align: middle;
 }
 
-.detaild_dropdown_span
+.detail_dropdown_span
 {
     font-weight: bold;
 }
@@ -48,6 +48,17 @@ table
     left: auto;
     min-width: 0px;
     text-align: left;
+}
+
+.problem:hover
+{
+    cursor: pointer;
+    background-color: #d5ecf9;
+}
+
+.detail_dropdown:hover
+{
+    cursor: pointer;
 }
 
 .selected_problem

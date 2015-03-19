@@ -85,28 +85,14 @@ $( document ).ready( function() {
         problem_detail(this);
     });
 
-    $( document ).on('click', '.detail_list', function() {
-        problem_detail($(this).prev());
-    });
-
     $( document ).on('click', '.detail_dropdown', function( event ) {
         event.stopPropagation();
         problem_detail_dropdown_item(this);
     });
 
-    /* hide dropdown detail */
-    $( document ).on('click', '.detail', function( event ) {
-        var dropdown_item = $(this).prev();
-        if ($(dropdown_item).hasClass("detail_dropdown")) {
-            event.stopPropagation();
-            problem_detail_dropdown_item(dropdown_item);
-        }
-    });
-
     $( document ).on('click', '.main-btn', function( event ) {
         event.stopPropagation();
         var problem = $(this).closest('tr');
-        //console.log(problem_id);
         delete_problem( problem );
     });
 
@@ -118,8 +104,6 @@ $( document ).ready( function() {
             $(problem).addClass("hidden");
             $(problem).next().addClass("hidden");
         });
-
-
     }
 
     function problem_detail( problem ) {
@@ -193,7 +177,7 @@ $( document ).ready( function() {
                     problem_content = problem_content.replace(/(<br>[^=]+=|^[^=]+=)/g, "<b>$1</b>");
 
                     text += "<tr class=\"detail detail_dropdown\"><td class=\"detail_label\">" + elem;
-                    text += "</td><td class=\"detail_content\"><span class=\"detaild_dropdown_span fa fa-angle-right\"></span></td></tr>";
+                    text += "</td><td class=\"detail_content\"><span class=\"detail_dropdown_span fa fa-angle-right\"></span></td></tr>";
                     text += "<tr class=\"detail hidden\"><td class=\"detail_label\">";
                 }
                 else {
