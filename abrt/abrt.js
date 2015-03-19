@@ -189,6 +189,17 @@ $( document ).ready( function() {
             }
         }
 
+        if (!problem_data.hasOwnProperty("not-reportable")) {
+            if (problem_data.hasOwnProperty("reported_to")) {
+                var reported_to = problem_data["reported_to"][2];
+                reported_to = reported_to.replace(/uReport.*\n/g, "");
+                reported_to = reported_to.replace(/ABRT Server.*\n/g, "");
+                if (reported_to == "") {
+                    text += "<tr class=\"how_to_report\"><td></td><td>Run \'abrt-cli report " + problem_id + "\' for reporting this problem.</td></tr>";
+                }
+            }
+        }
+
         return text;
     }
 

@@ -76,3 +76,9 @@ table
     text-align: right;
     margin-right: 15px;
 }
+
+.how_to_report
+{
+    height: 30px;
+    vertical-align: bottom;
+}
