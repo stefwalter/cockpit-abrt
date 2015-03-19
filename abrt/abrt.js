@@ -89,19 +89,38 @@ $( document ).ready( function() {
         problem_detail($(this).prev());
     });
 
+    $( document ).on('click', '.detail_dropdown', function( event ) {
+        event.stopPropagation();
+        problem_detail_dropdown_item(this);
+    });
+
+    /* hide dropdown detail */
+    $( document ).on('click', '.detail', function( event ) {
+        var dropdown_item = $(this).prev();
+        if ($(dropdown_item).hasClass("detail_dropdown")) {
+            event.stopPropagation();
+            problem_detail_dropdown_item(dropdown_item);
+        }
+    });
+
     $( document ).on('click', '.main-btn', function( event ) {
         event.stopPropagation();
         var problem = $(this).closest('tr');
-        var problem_id = $(problem).attr('id');
-        console.log(problem_id);
-        var del = problems.DeleteProblem([problem_id])
-            del.done(function() {
-                //console.log(problem_id + " deleted.");
-                $(problem).addClass("hidden");
-                $(problem).next().addClass("hidden");
-            });
-
+        //console.log(problem_id);
+        delete_problem( problem );
     });
+
+    function delete_problem( problem ) {
+        var problem_id = $(problem).attr('id');
+        var del = problems.DeleteProblem([problem_id]);
+        del.done(function() {
+            //console.log(problem_id + " deleted.");
+            $(problem).addClass("hidden");
+            $(problem).next().addClass("hidden");
+        });
+
+
+    }
 
     function problem_detail( problem ) {
         var detail_row = $(problem).next();
@@ -128,6 +147,25 @@ $( document ).ready( function() {
         }
     }
 
+    function problem_detail_dropdown_item( item ) {
+
+        var desc = $(item).next();
+        var dropdown_title = $(item).find("span");
+
+        /* show detail */
+        if ($(desc).hasClass("hidden")) {
+            $(desc).removeClass("hidden");
+            $(dropdown_title).addClass("fa-angle-down");
+            $(dropdown_title).removeClass("fa-angle-right");
+        }
+        /* hide detail */
+        else {
+            $(desc).addClass("hidden");
+            $(dropdown_title).addClass("fa-angle-right");
+            $(dropdown_title).removeClass("fa-angle-down");
+        }
+    }
+
     function create_detail_table(row) {
         var problem_id = $(row).attr('id');
 
@@ -148,13 +186,29 @@ $( document ).ready( function() {
 
                 var problem_content = problem_data[elem][2];
 
-                problem_content = problem_content.replace(/\n/g, "<br>");
-                /* bold variable */
-                problem_content = problem_content.replace(/(<br>[^=]+=|^[^=]+=)/g, "<b>$1</b>");
 
-                text += "<tr class=\"detail\"><td class=\"detail_label\">" + elem + "</td><td class=\"detail_content\">" + problem_content + "</td></tr>";
+                if (problem_content.indexOf('\n') != -1) {
+                    problem_content = problem_content.replace(/\n/g, "<br>");
+                    /* bold variable */
+                    problem_content = problem_content.replace(/(<br>[^=]+=|^[^=]+=)/g, "<b>$1</b>");
+
+                    text += "<tr class=\"detail detail_dropdown\"><td class=\"detail_label\">" + elem;
+                    text += "</td><td class=\"detail_content\"><span class=\"detaild_dropdown_span fa fa-angle-right\"></span></td></tr>";
+                    text += "<tr class=\"detail hidden\"><td class=\"detail_label\">";
+                }
+                else {
+                    text += "<tr class=\"detail\"><td class=\"detail_label\">" + elem;
+                }
+                text += "</td><td class=\"detail_content\">" + problem_content + "</td></tr>";
+
             }
         }
         return text;
     }
+
+    $( document ).on('click', '.delete-all-btn', function( event ) {
+        $(".problem").each(function() {
+            delete_problem(this);
+        });
+    });
 });

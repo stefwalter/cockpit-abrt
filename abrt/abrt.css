@@ -24,6 +24,12 @@ table
 .detail_content
 {
     padding-top: 5px;
+    vertical-align: middle;
+}
+
+.detaild_dropdown_span
+{
+    font-weight: bold;
 }
 
 .btn
@@ -47,4 +53,15 @@ table
 .selected_problem
 {
     background-color: #eee;
+}
+
+.panel
+{
+    margin-bottom: 10px;
+}
+
+.delete_all_btn
+{
+    text-align: right;
+    margin-right: 15px;
 }
