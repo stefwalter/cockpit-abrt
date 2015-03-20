@@ -5,12 +5,13 @@ This Cockpit module adds a new item called Problems to the Tools menu. The
 module displays list of problems detect by ABRT and allows its users to view
 problem details and report the problems to external bug trackers.
 
+![Cockpit ABRT](https://mhabrnal.fedorapeople.org/media/cockpit-abrt/main_look.png)
+
 Overview
 --------
 
 The module gets the displayed data from `org.freedesktop.problems` D-Bus service:
 https://jfilak.fedorapeople.org/ProblemsAPI/
-
 
 Installation
 ------------
