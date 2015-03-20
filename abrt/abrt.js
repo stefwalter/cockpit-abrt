@@ -85,28 +85,14 @@ $( document ).ready( function() {
         problem_detail(this);
     });
 
-    $( document ).on('click', '.detail_list', function() {
-        problem_detail($(this).prev());
-    });
-
     $( document ).on('click', '.detail_dropdown', function( event ) {
         event.stopPropagation();
         problem_detail_dropdown_item(this);
     });
 
-    /* hide dropdown detail */
-    $( document ).on('click', '.detail', function( event ) {
-        var dropdown_item = $(this).prev();
-        if ($(dropdown_item).hasClass("detail_dropdown")) {
-            event.stopPropagation();
-            problem_detail_dropdown_item(dropdown_item);
-        }
-    });
-
     $( document ).on('click', '.main-btn', function( event ) {
         event.stopPropagation();
         var problem = $(this).closest('tr');
-        //console.log(problem_id);
         delete_problem( problem );
     });
 
@@ -118,8 +104,6 @@ $( document ).ready( function() {
             $(problem).addClass("hidden");
             $(problem).next().addClass("hidden");
         });
-
-
     }
 
     function problem_detail( problem ) {
@@ -186,14 +170,15 @@ $( document ).ready( function() {
 
                 var problem_content = problem_data[elem][2];
 
-
                 if (problem_content.indexOf('\n') != -1) {
+                    problem_content = problem_content.replace(/</g, "&lt;");
+                    problem_content = problem_content.replace(/>/g, "&gt;");
                     problem_content = problem_content.replace(/\n/g, "<br>");
                     /* bold variable */
                     problem_content = problem_content.replace(/(<br>[^=]+=|^[^=]+=)/g, "<b>$1</b>");
 
                     text += "<tr class=\"detail detail_dropdown\"><td class=\"detail_label\">" + elem;
-                    text += "</td><td class=\"detail_content\"><span class=\"detaild_dropdown_span fa fa-angle-right\"></span></td></tr>";
+                    text += "</td><td class=\"detail_content\"><span class=\"detail_dropdown_span fa fa-angle-right\"></span></td></tr>";
                     text += "<tr class=\"detail hidden\"><td class=\"detail_label\">";
                 }
                 else {
@@ -203,6 +188,18 @@ $( document ).ready( function() {
 
             }
         }
+
+        if (!problem_data.hasOwnProperty("not-reportable")) {
+            if (problem_data.hasOwnProperty("reported_to")) {
+                var reported_to = problem_data["reported_to"][2];
+                reported_to = reported_to.replace(/uReport.*\n/g, "");
+                reported_to = reported_to.replace(/ABRT Server.*\n/g, "");
+                if (reported_to == "") {
+                    text += "<tr class=\"how_to_report\"><td></td><td>Run \'abrt-cli report " + problem_id + "\' for reporting this problem.</td></tr>";
+                }
+            }
+        }
+
         return text;
     }
 

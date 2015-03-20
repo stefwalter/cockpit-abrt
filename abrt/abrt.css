@@ -27,7 +27,7 @@ table
     vertical-align: middle;
 }
 
-.detaild_dropdown_span
+.detail_dropdown_span
 {
     font-weight: bold;
 }
@@ -50,6 +50,17 @@ table
     text-align: left;
 }
 
+.problem:hover
+{
+    cursor: pointer;
+    background-color: #d5ecf9;
+}
+
+.detail_dropdown:hover
+{
+    cursor: pointer;
+}
+
 .selected_problem
 {
     background-color: #eee;
@@ -64,4 +75,10 @@ table
 {
     text-align: right;
     margin-right: 15px;
+}
+
+.how_to_report
+{
+    height: 30px;
+    vertical-align: bottom;
 }
