@@ -26,4 +26,5 @@ http://files.cockpit-project.org/guide/modules.html
 
 TODO
 ====
+* register the Crash signal and update the UI when a new crash appears
 * enable reporting
