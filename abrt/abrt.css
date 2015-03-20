@@ -1,0 +1,67 @@
+table
+{
+    font-size: 11px;
+}
+
+#problems > tbody > tr > td
+{
+    vertical-align: middle;
+}
+
+.detail
+{
+    vertical-align: top;
+}
+
+.detail_label
+{
+    color: #888;
+    padding-right: 8px;
+    padding-top: 5px;
+    text-align: right;
+}
+
+.detail_content
+{
+    padding-top: 5px;
+    vertical-align: middle;
+}
+
+.detaild_dropdown_span
+{
+    font-weight: bold;
+}
+
+.btn
+{
+    font-size: 11px;
+}
+
+.btn-group
+{
+//    width: 100px;
+}
+
+.dropdown-menu
+{
+    right: 0px;
+    left: auto;
+    min-width: 0px;
+    text-align: left;
+}
+
+.selected_problem
+{
+    background-color: #eee;
+}
+
+.panel
+{
+    margin-bottom: 10px;
+}
+
+.delete_all_btn
+{
+    text-align: right;
+    margin-right: 15px;
+}
