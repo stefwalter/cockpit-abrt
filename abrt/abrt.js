@@ -131,9 +131,16 @@ $( document ).ready( function() {
 
                 var problem_content = problem_data[elem][2];
 
+                /* clickable url in reported_to */
+                if (elem == "reported_to") {
+                    /* AAA URL=aaa BBB=bbb -> AAA URL=<a href="aaa" ...>aaa</a> BBB=bbb */
+                    problem_content = problem_content.replace(/URL=([^\s]+)(\s|$)/g, "URL=<a href=\"$1\" target=\"_blank\">$1</a>$2");
+                }
+
                 if (problem_content.indexOf('\n') != -1) {
                     problem_content = problem_content.replace(/</g, "&lt;");
                     problem_content = problem_content.replace(/>/g, "&gt;");
+
                     problem_content = problem_content.replace(/\n/g, "<br>");
                     /* bold variable 'ABC=abc' -> '<b>ABC=</b>abc' */
                     problem_content = problem_content.replace(/(<br>[^=]+=|^[^=]+=)/g, "<b>$1</b>");
