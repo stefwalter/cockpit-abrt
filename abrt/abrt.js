@@ -157,7 +157,7 @@ $( document ).ready( function() {
                 reported_to = reported_to.replace(/uReport.*\n/g, "");
                 reported_to = reported_to.replace(/ABRT Server.*\n/g, "");
                 if (reported_to == "") {
-                    text += "<tr class=\"how_to_report\"><td></td><td>Run \'abrt-cli report " + problem_id + "\' for reporting this problem.</td></tr>";
+                    text += "<tr class=\"how_to_report\"><td colspan=\"2\"><div class=\"inline_block\">Please run the following command on the machine where the crash occurred in order to report the problem:<br/><samp>$ abrt-cli report " + problem_id + "</samp></div></td></tr>";
                 }
             }
         }

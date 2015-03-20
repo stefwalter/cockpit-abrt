@@ -25,6 +25,7 @@ table
 {
     padding-top: 5px;
     vertical-align: middle;
+    width: 100%;
 }
 
 .detail_dropdown_span
@@ -79,6 +80,13 @@ table
 
 .how_to_report
 {
-    height: 30px;
+    height: 60px;
     vertical-align: bottom;
+    text-align: center;
+}
+
+.inline_block
+{
+    display: inline-block;
+    text-align: left;
 }
