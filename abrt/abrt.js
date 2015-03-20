@@ -225,6 +225,7 @@ $( document ).ready( function() {
         del.done(function() {
             //console.log(problem_id + " deleted.");
             $(problem).addClass("hidden");
+            /* hide also the problem description */
             $(problem).next().addClass("hidden");
         });
     }
