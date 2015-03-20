@@ -43,7 +43,7 @@ $( document ).ready( function() {
             value = new Date(parseInt(value) * 1000).toLocaleString();
         }
 
-        return value;
+        return escapeHtml(value);
     }
 
     function get_action_btn() {
@@ -129,7 +129,7 @@ $( document ).ready( function() {
             var elem = detail_elements[i];
             if(problem_data.hasOwnProperty(elem)) {
 
-                var problem_content = problem_data[elem][2];
+                var problem_content = escapeHtml(problem_data[elem][2]);
 
                 /* clickable url in reported_to */
                 if (elem == "reported_to") {
@@ -138,8 +138,6 @@ $( document ).ready( function() {
                 }
 
                 if (problem_content.indexOf('\n') != -1) {
-                    problem_content = problem_content.replace(/</g, "&lt;");
-                    problem_content = problem_content.replace(/>/g, "&gt;");
 
                     problem_content = problem_content.replace(/\n/g, "<br>");
                     /* bold variable 'ABC=abc' -> '<b>ABC=</b>abc' */
@@ -229,5 +227,15 @@ $( document ).ready( function() {
             $(problem).addClass("hidden");
             $(problem).next().addClass("hidden");
         });
+    }
+
+    function escapeHtml(str) {
+        return String(str)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;")
+            .replace(/\//g, "&#x2F;")
     }
 });
