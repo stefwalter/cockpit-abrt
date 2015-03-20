@@ -26,6 +26,4 @@ http://files.cockpit-project.org/guide/modules.html
 
 TODO
 ====
-* make the default list more usefull
-* add the problem details page (similar to Problem Details dialogue, see abrt/libreport#273)
-* add possibility to remove selected problems
+* enable reporting
