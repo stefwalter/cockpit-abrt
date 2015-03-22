@@ -1,6 +1,44 @@
 $( document ).ready( function() {
-    var required_elements = ["time", "reason", "package", "container_image", "container_id", "count"];
-    var detail_elements = ["reason", "backtrace", "cmdline", "executable", "package", "component", "pid", "hostname", "count", "first_occurence", "last_occurence", "user", "type", "duphash", "os_release", "abrt_version", "runlevel", "kernel", "architecture", "uuid", "ureports_counter", "data_directory", "reported_to", "os_info", "environ"];
+    /* main cockpit elements */
+    var required_elements = ["time",
+                             "reason",
+                             "package",
+                             "container_image",
+                             "container_id",
+                             "count"];
+
+    /* ordered detail elements */
+    var detail_elements = ["exploitable",
+                           "not-reportable",
+                           "reason",
+                           "backtrace",
+                           "crash_function",
+                           "cmdline",
+                           "executable",
+                           "package",
+                           "component",
+                           "pid",
+                           "pwd",
+                           "hostname",
+                           "count",
+                           "user", /* special element consists from username and (uid) */
+                           "type/analyzer", /* special element */
+                           "last_occurence"];
+    /*
+     * In case that you want to display some special element (for example element
+     * which is composed of two elements) you have to add its name to the
+     * 'detail_element' array, add the name to the 'special_elements' list and
+     * define its required content in the function 'get_element_content'.
+     *  */
+    var special_elements = ["user",
+                            "type/analyzer"];
+
+    /* ignored elements */
+    var black_list_elements = ["pkg_name",
+                               "pkg_version",
+                               "pkg_release",
+                               "pkg_arch",
+                               "pkg_epoch"];
 
     var service = cockpit.dbus('org.freedesktop.problems');
     var problems = service.proxy('org.freedesktop.problems', '/org/freedesktop/problems');
@@ -125,34 +163,15 @@ $( document ).ready( function() {
 
     function create_detail(problem_data, problem_id) {
         var text = "";
+        /*  show detail_elements */
         for (i = 0; i < detail_elements.length; i++) {
             var elem = detail_elements[i];
-            if(problem_data.hasOwnProperty(elem)) {
+            text += create_detail_element(problem_data, problem_id, elem);
+        }
 
-                var problem_content = escapeHtml(problem_data[elem][2]);
-
-                /* clickable url in reported_to */
-                if (elem == "reported_to") {
-                    /* AAA URL=aaa BBB=bbb -> AAA URL=<a href="aaa" ...>aaa</a> BBB=bbb */
-                    problem_content = problem_content.replace(/URL=([^\s]+)(\s|$)/g, "URL=<a href=\"$1\" target=\"_blank\">$1</a>$2");
-                }
-
-                if (problem_content.indexOf('\n') != -1) {
-
-                    problem_content = problem_content.replace(/\n/g, "<br>");
-                    /* bold variable 'ABC=abc' -> '<b>ABC=</b>abc' */
-                    problem_content = problem_content.replace(/(<br>[^=]+=|^[^=]+=)/g, "<b>$1</b>");
-
-                    text += "<tr class=\"detail detail_dropdown\"><td class=\"detail_label\">" + elem;
-                    text += "</td><td class=\"detail_content\"><span class=\"detail_dropdown_span fa fa-angle-right\"></span></td></tr>";
-                    text += "<tr class=\"detail hidden\"><td class=\"detail_label\">";
-                }
-                else {
-                    text += "<tr class=\"detail\"><td class=\"detail_label\">" + elem;
-                }
-                text += "</td><td class=\"detail_content\">" + problem_content + "</td></tr>";
-
-            }
+        /* display the other elements from problem data (which are not on black list)*/
+        for (var elem in problem_data) {
+            text += create_detail_element(problem_data, problem_id, elem);
         }
 
         /* add instruction how to report problem if problem is not reported and is reportable */
@@ -178,6 +197,82 @@ $( document ).ready( function() {
         }
 
         return text;
+    }
+
+    function create_detail_element(problem_data, problem_id, elem) {
+
+        var text = "";
+        /* skip this element if it is on black list */
+        if (black_list_elements.indexOf(elem) > -1)
+            return text;
+
+        if (problem_data.hasOwnProperty(elem) || special_elements.indexOf(elem) > -1) {
+
+            var problem_content = get_element_content(problem_data, elem);
+
+            /* clickable url in reported_to */
+            if (elem == "reported_to") {
+                /* AAA URL=aaa BBB=bbb -> AAA URL=<a href="aaa" ...>aaa</a> BBB=bbb */
+                problem_content = problem_content.replace(/URL=([^\s]+)(\s|$)/g, "URL=<a href=\"$1\" target=\"_blank\">$1</a>$2");
+            }
+
+            if (problem_content.indexOf('\n') != -1) {
+
+                problem_content = problem_content.replace(/\n/g, "<br>");
+                /* bold variable 'ABC=abc' -> '<b>ABC=</b>abc' */
+                problem_content = problem_content.replace(/(<br>[^=]+=|^[^=]+=)/g, "<b>$1</b>");
+
+                text += "<tr class=\"detail detail_dropdown\"><td class=\"detail_label\">" + elem;
+                text += "</td><td class=\"detail_content\"><span class=\"detail_dropdown_span fa fa-angle-right\"></span></td></tr>";
+                text += "<tr class=\"detail hidden\"><td class=\"detail_label\">";
+            }
+            else {
+                text += "<tr class=\"detail\"><td class=\"detail_label\">" + elem;
+            }
+            text += "</td><td class=\"detail_content\">" + problem_content + "</td></tr>";
+
+        }
+        return text;
+    }
+
+    function get_element_content(problem_data, elem) {
+
+        /* ordinary element */
+        if(problem_data.hasOwnProperty(elem)) {
+            return get_element_content_if_exist(problem_data, elem);
+        }
+
+        /* special element */
+        var text = "";
+        switch (elem) {
+            case "user": /*  username (uid)*/
+                text += get_element_content_if_exist(problem_data, "username");
+                text += " (" + get_element_content_if_exist(problem_data, "uid") + ")";
+                break;
+            case "type/analyzer": /*  type/analyzer */
+                text += get_element_content_if_exist(problem_data, "type");
+                text += "/" + get_element_content_if_exist(problem_data, "analyzer");
+                break;
+            default:
+                break;
+        }
+        return text;
+    }
+
+    /* get content of element 'elem' if exist and remove it from the problem_data */
+    function get_element_content_if_exist(problem_data, elem) {
+        if(problem_data.hasOwnProperty(elem)) {
+            var content = problem_data[elem][2];
+
+            if (elem == "time" || elem == "last_occurrence") {
+                content = new Date(parseInt(content) * 1000).toLocaleString();
+            }
+
+            /* remove the shown element */
+            delete problem_data[elem];
+            return escapeHtml(content);
+        }
+        return "";
     }
 
     /* dropdown multiline detail handler */
