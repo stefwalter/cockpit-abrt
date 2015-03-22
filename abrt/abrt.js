@@ -219,8 +219,12 @@ $( document ).ready( function() {
             if (problem_content.indexOf('\n') != -1) {
 
                 problem_content = problem_content.replace(/\n/g, "<br>");
+
                 /* bold variable 'ABC=abc' -> '<b>ABC=</b>abc' */
-                problem_content = problem_content.replace(/(<br>[^=]+=|^[^=]+=)/g, "<b>$1</b>");
+                /* we want to highlight only multiline elements */
+                if (elem == "environ" || elem == "reported_to" || elem == "os_info" ) {
+                    problem_content = problem_content.replace(/(<br>[^=]+=|^[^=]+=)/g, "<b>$1</b>");
+                }
 
                 text += "<tr class=\"detail detail_dropdown\"><td class=\"detail_label\">" + elem;
                 text += "</td><td class=\"detail_content\"><span class=\"detail_dropdown_span fa fa-angle-right\"></span></td></tr>";
