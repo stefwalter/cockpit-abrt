@@ -169,7 +169,24 @@ $( document ).ready( function() {
             text += create_detail_element(problem_data, problem_id, elem);
         }
 
-        /* display the other elements from problem data (which are not on black list)*/
+        /* display oneline elements from problem data (which are not on black list)*/
+        for (var elem in problem_data) {
+            if (problem_data[elem][2].indexOf('\n') > -1 || (problem_data[elem][0] & 1 /* binary */))
+                continue;
+            text += create_detail_element(problem_data, problem_id, elem);
+        }
+
+        /* display DATA_DIRECTORY path */
+        text += "<tr class=\"detail\"><td class=\"detail_label\">DATA_DIRECTORY</td><td class=\"detail_content\">" + problem_id + "</td></tr>";
+
+        /* display binary elements from problem data (which are not on black list)*/
+        for (var elem in problem_data) {
+            if ((problem_data[elem][0] & 1 /* binary */) == 0)
+                continue;
+            text += create_detail_element(problem_data, problem_id, elem);
+        }
+
+        /* display multiline elements from problem data (which are not on black list)*/
         for (var elem in problem_data) {
             text += create_detail_element(problem_data, problem_id, elem);
         }
@@ -208,33 +225,36 @@ $( document ).ready( function() {
 
         if (problem_data.hasOwnProperty(elem) || special_elements.indexOf(elem) > -1) {
 
-            var problem_content = get_element_content(problem_data, elem);
+            var elem_name = {"name": elem};
+            var problem_content = get_element_content(problem_data, elem_name);
+            elem = elem_name.name;
+            if (problem_content != "") {
 
-            /* clickable url in reported_to */
-            if (elem == "reported_to") {
-                /* AAA URL=aaa BBB=bbb -> AAA URL=<a href="aaa" ...>aaa</a> BBB=bbb */
-                problem_content = problem_content.replace(/URL=([^\s]+)(\s|$)/g, "URL=<a href=\"$1\" target=\"_blank\">$1</a>$2");
-            }
-
-            if (problem_content.indexOf('\n') != -1) {
-
-                problem_content = problem_content.replace(/\n/g, "<br>");
-
-                /* bold variable 'ABC=abc' -> '<b>ABC=</b>abc' */
-                /* we want to highlight only multiline elements */
-                if (elem == "environ" || elem == "reported_to" || elem == "os_info" ) {
-                    problem_content = problem_content.replace(/(<br>[^=]+=|^[^=]+=)/g, "<b>$1</b>");
+                /* clickable url in reported_to */
+                if (elem == "reported_to") {
+                    /* AAA URL=aaa BBB=bbb -> AAA URL=<a href="aaa" ...>aaa</a> BBB=bbb */
+                    problem_content = problem_content.replace(/URL=([^\s]+)(\s|$)/g, "URL=<a href=\"$1\" target=\"_blank\">$1</a>$2");
                 }
 
-                text += "<tr class=\"detail detail_dropdown\"><td class=\"detail_label\">" + elem;
-                text += "</td><td class=\"detail_content\"><span class=\"detail_dropdown_span fa fa-angle-right\"></span></td></tr>";
-                text += "<tr class=\"detail hidden\"><td class=\"detail_label\">";
-            }
-            else {
-                text += "<tr class=\"detail\"><td class=\"detail_label\">" + elem;
-            }
-            text += "</td><td class=\"detail_content\">" + problem_content + "</td></tr>";
+                if (problem_content.indexOf('\n') != -1) {
 
+                    problem_content = problem_content.replace(/\n/g, "<br>");
+
+                    /* bold variable 'ABC=abc' -> '<b>ABC=</b>abc' */
+                    /* we want to highlight only multiline elements */
+                    if (elem == "environ" || elem == "reported_to" || elem == "os_info" ) {
+                        problem_content = problem_content.replace(/(<br>[^=]+=|^[^=]+=)/g, "<b>$1</b>");
+                    }
+
+                    text += "<tr class=\"detail detail_dropdown\"><td class=\"detail_label\">" + elem;
+                    text += "</td><td class=\"detail_content\"><span class=\"detail_dropdown_span fa fa-angle-right\"></span></td></tr>";
+                    text += "<tr class=\"detail hidden\"><td class=\"detail_label\">";
+                }
+                else {
+                    text += "<tr class=\"detail\"><td class=\"detail_label\">" + elem;
+                }
+                text += "</td><td class=\"detail_content\">" + problem_content + "</td></tr>";
+            }
         }
         return text;
     }
@@ -242,20 +262,44 @@ $( document ).ready( function() {
     function get_element_content(problem_data, elem) {
 
         /* ordinary element */
-        if(problem_data.hasOwnProperty(elem)) {
-            return get_element_content_if_exist(problem_data, elem);
+        if(problem_data.hasOwnProperty(elem.name)) {
+            return get_element_content_if_exist(problem_data, elem.name);
         }
 
         /* special element */
         var text = "";
-        switch (elem) {
+        switch (elem.name) {
             case "user": /*  username (uid)*/
-                text += get_element_content_if_exist(problem_data, "username");
-                text += " (" + get_element_content_if_exist(problem_data, "uid") + ")";
+                var username = get_element_content_if_exist(problem_data, "username");
+                var uid = get_element_content_if_exist(problem_data, "uid");
+                if (username != "" && uid != "") {
+                    text += username;
+                    text += " (" + uid + ")";
+                    break;
+                }
+                if (uid != "") {
+                    elem.name = "uid";
+                    text += uid;
+                    break;
+                }
+                if (username != "") {
+                    text += username;
+                    break;
+                }
                 break;
             case "type/analyzer": /*  type/analyzer */
-                text += get_element_content_if_exist(problem_data, "type");
-                text += "/" + get_element_content_if_exist(problem_data, "analyzer");
+                var type = get_element_content_if_exist(problem_data, "type");
+                var analyzer = get_element_content_if_exist(problem_data, "analyzer");
+                if (type != "" && analyzer != "") {
+                    text += type;
+                    text += "/" + analyzer;
+                    break;
+                }
+                if (analyzer == "") {
+                    elem.name = "type";
+                    text += type;
+                    break;
+                }
                 break;
             default:
                 break;
@@ -272,12 +316,31 @@ $( document ).ready( function() {
                 content = new Date(parseInt(content) * 1000).toLocaleString();
             }
 
+            /* binary file */
+            if (problem_data[elem][0] & 1 /* 1 is flag for binary file */) {
+               var size = humanSize(problem_data[elem][1]);
+               content = "$DATA_DIRECTORY/" + elem + " (binary file, " + size + ")";
+            }
+
             /* remove the shown element */
             delete problem_data[elem];
             return escapeHtml(content);
         }
         return "";
     }
+
+    function humanSize(bytes) {
+        var thresh = 1024;
+        var units = ['KiB','MiB','GiB','TiB','PiB','EiB','ZiB','YiB'];
+
+        if(bytes < thresh) return bytes + ' B';
+        var u = -1;
+        do {
+            bytes /= thresh;
+            ++u;
+        } while(bytes >= thresh);
+        return bytes.toFixed(1)+' '+units[u];
+    };
 
     /* dropdown multiline detail handler */
     $( document ).on('click', '.detail_dropdown', function( event ) {
