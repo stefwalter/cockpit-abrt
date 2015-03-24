@@ -1,11 +1,11 @@
 $( document ).ready( function() {
     var required_elements = ["time", "reason", "package", "container_image", "container_id", "count"];
     var detail_elements = ["reason", "backtrace", "cmdline", "executable", "package", "component", "pid", "hostname", "count", "first_occurence", "last_occurence", "user", "type", "duphash", "os_release", "abrt_version", "runlevel", "kernel", "architecture", "uuid", "ureports_counter", "data_directory", "reported_to", "os_info", "environ"];
-    var dropdown_elements = ["backtrace", "", ""]
 
     var service = cockpit.dbus('org.freedesktop.problems');
     var problems = service.proxy('org.freedesktop.problems', '/org/freedesktop/problems');
 
+    /* load all problems */
     problems.wait(load_problems);
 
     function load_problems() {
@@ -43,7 +43,7 @@ $( document ).ready( function() {
             value = new Date(parseInt(value) * 1000).toLocaleString();
         }
 
-        return value;
+        return escapeHtml(value);
     }
 
     function get_action_btn() {
@@ -81,30 +81,10 @@ $( document ).ready( function() {
         return li;
     }
 
+    /* problem info click handler */
     $( document ).on('click', '.problem', function() {
         problem_detail(this);
     });
-
-    $( document ).on('click', '.detail_dropdown', function( event ) {
-        event.stopPropagation();
-        problem_detail_dropdown_item(this);
-    });
-
-    $( document ).on('click', '.main-btn', function( event ) {
-        event.stopPropagation();
-        var problem = $(this).closest('tr');
-        delete_problem( problem );
-    });
-
-    function delete_problem( problem ) {
-        var problem_id = $(problem).attr('id');
-        var del = problems.DeleteProblem([problem_id]);
-        del.done(function() {
-            //console.log(problem_id + " deleted.");
-            $(problem).addClass("hidden");
-            $(problem).next().addClass("hidden");
-        });
-    }
 
     function problem_detail( problem ) {
         var detail_row = $(problem).next();
@@ -131,6 +111,81 @@ $( document ).ready( function() {
         }
     }
 
+    function create_detail_table(row) {
+        var problem_id = $(row).attr('id');
+
+        problems.GetProblemData(problem_id)
+            .done(function(problem_data, options) {
+
+                var result = create_detail(problem_data, problem_id);
+
+                $(row).next().children().append(result);
+            });
+    }
+
+    function create_detail(problem_data, problem_id) {
+        var text = "";
+        for (i = 0; i < detail_elements.length; i++) {
+            var elem = detail_elements[i];
+            if(problem_data.hasOwnProperty(elem)) {
+
+                var problem_content = escapeHtml(problem_data[elem][2]);
+
+                /* clickable url in reported_to */
+                if (elem == "reported_to") {
+                    /* AAA URL=aaa BBB=bbb -> AAA URL=<a href="aaa" ...>aaa</a> BBB=bbb */
+                    problem_content = problem_content.replace(/URL=([^\s]+)(\s|$)/g, "URL=<a href=\"$1\" target=\"_blank\">$1</a>$2");
+                }
+
+                if (problem_content.indexOf('\n') != -1) {
+
+                    problem_content = problem_content.replace(/\n/g, "<br>");
+                    /* bold variable 'ABC=abc' -> '<b>ABC=</b>abc' */
+                    problem_content = problem_content.replace(/(<br>[^=]+=|^[^=]+=)/g, "<b>$1</b>");
+
+                    text += "<tr class=\"detail detail_dropdown\"><td class=\"detail_label\">" + elem;
+                    text += "</td><td class=\"detail_content\"><span class=\"detail_dropdown_span fa fa-angle-right\"></span></td></tr>";
+                    text += "<tr class=\"detail hidden\"><td class=\"detail_label\">";
+                }
+                else {
+                    text += "<tr class=\"detail\"><td class=\"detail_label\">" + elem;
+                }
+                text += "</td><td class=\"detail_content\">" + problem_content + "</td></tr>";
+
+            }
+        }
+
+        /* add instruction how to report problem if problem is not reported and is reportable */
+        if (!problem_data.hasOwnProperty("not-reportable")) {
+            if (problem_data.hasOwnProperty("reported_to")) {
+                var reported_to = problem_data["reported_to"][2];
+                reported_to = reported_to.split("\n");
+
+                var reported = false;
+                for (var i = 0; i < reported_to.length; ++i) {
+                    var line = reported_to[i];
+                    if (line.substring(0, 8) != "uReport:" && line.substring(0, 12) != "ABRT Server:" && line != "") {
+                        reported = true;
+                        break;
+                    }
+                }
+
+                /* bug is not reported */
+                if (reported == false) {
+                    text += "<tr class=\"how_to_report\"><td colspan=\"2\"><div class=\"inline_block\">Please run the following command on the machine where the crash occurred in order to report the problem:<br/><samp>$ abrt-cli report " + problem_id + "</samp></div></td></tr>";
+                }
+            }
+        }
+
+        return text;
+    }
+
+    /* dropdown multiline detail handler */
+    $( document ).on('click', '.detail_dropdown', function( event ) {
+        event.stopPropagation();
+        problem_detail_dropdown_item(this);
+    });
+
     function problem_detail_dropdown_item( item ) {
 
         var desc = $(item).next();
@@ -150,62 +205,38 @@ $( document ).ready( function() {
         }
     }
 
-    function create_detail_table(row) {
-        var problem_id = $(row).attr('id');
+    /* delete btn handler */
+    $( document ).on('click', '.main-btn', function( event ) {
+        event.stopPropagation();
+        var problem = $(this).closest('tr');
+        delete_problem( problem );
+    });
 
-        problems.GetProblemData(problem_id)
-            .done(function(problem_data, options) {
-
-                var result = create_detail(problem_data, problem_id);
-
-                $(row).next().children().append(result);
-            });
-    }
-
-    function create_detail(problem_data, problem_id) {
-        var text = "";
-        for (i = 0; i < detail_elements.length; i++) {
-            var elem = detail_elements[i];
-            if(problem_data.hasOwnProperty(elem)) {
-
-                var problem_content = problem_data[elem][2];
-
-                if (problem_content.indexOf('\n') != -1) {
-                    problem_content = problem_content.replace(/</g, "&lt;");
-                    problem_content = problem_content.replace(/>/g, "&gt;");
-                    problem_content = problem_content.replace(/\n/g, "<br>");
-                    /* bold variable */
-                    problem_content = problem_content.replace(/(<br>[^=]+=|^[^=]+=)/g, "<b>$1</b>");
-
-                    text += "<tr class=\"detail detail_dropdown\"><td class=\"detail_label\">" + elem;
-                    text += "</td><td class=\"detail_content\"><span class=\"detail_dropdown_span fa fa-angle-right\"></span></td></tr>";
-                    text += "<tr class=\"detail hidden\"><td class=\"detail_label\">";
-                }
-                else {
-                    text += "<tr class=\"detail\"><td class=\"detail_label\">" + elem;
-                }
-                text += "</td><td class=\"detail_content\">" + problem_content + "</td></tr>";
-
-            }
-        }
-
-        if (!problem_data.hasOwnProperty("not-reportable")) {
-            if (problem_data.hasOwnProperty("reported_to")) {
-                var reported_to = problem_data["reported_to"][2];
-                reported_to = reported_to.replace(/uReport.*\n/g, "");
-                reported_to = reported_to.replace(/ABRT Server.*\n/g, "");
-                if (reported_to == "") {
-                    text += "<tr class=\"how_to_report\"><td></td><td>Run \'abrt-cli report " + problem_id + "\' for reporting this problem.</td></tr>";
-                }
-            }
-        }
-
-        return text;
-    }
-
+    /* delete all btn handler */
     $( document ).on('click', '.delete-all-btn', function( event ) {
         $(".problem").each(function() {
             delete_problem(this);
         });
     });
+
+    function delete_problem( problem ) {
+        var problem_id = $(problem).attr('id');
+        var del = problems.DeleteProblem([problem_id]);
+        del.done(function() {
+            //console.log(problem_id + " deleted.");
+            $(problem).addClass("hidden");
+            /* hide also the problem description */
+            $(problem).next().addClass("hidden");
+        });
+    }
+
+    function escapeHtml(str) {
+        return String(str)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;")
+            .replace(/\//g, "&#x2F;")
+    }
 });
