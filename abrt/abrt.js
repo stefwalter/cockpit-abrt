@@ -9,7 +9,7 @@ $( document ).ready( function() {
     problems.wait(load_problems);
 
     function load_problems() {
-        problems.GetAllProblems()
+        problems.GetProblems()
             .done(function(args, options) {
                 args.forEach(function(problem_id) {
                     problems.GetProblemData(problem_id)
