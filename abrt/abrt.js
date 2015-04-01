@@ -1,6 +1,44 @@
 $( document ).ready( function() {
-    var required_elements = ["time", "reason", "package", "container_image", "container_id", "count"];
-    var detail_elements = ["reason", "backtrace", "cmdline", "executable", "package", "component", "pid", "hostname", "count", "first_occurence", "last_occurence", "user", "type", "duphash", "os_release", "abrt_version", "runlevel", "kernel", "architecture", "uuid", "ureports_counter", "data_directory", "reported_to", "os_info", "environ"];
+    /* main cockpit elements */
+    var required_elements = ["time",
+                             "reason",
+                             "package",
+                             "container_image",
+                             "container_id",
+                             "count"];
+
+    /* ordered detail elements */
+    var detail_elements = ["exploitable",
+                           "not-reportable",
+                           "reason",
+                           "backtrace",
+                           "crash_function",
+                           "cmdline",
+                           "executable",
+                           "package",
+                           "component",
+                           "pid",
+                           "pwd",
+                           "hostname",
+                           "count",
+                           "user", /* special element consists from username and (uid) */
+                           "type/analyzer", /* special element */
+                           "last_occurence"];
+    /*
+     * In case that you want to display some special element (for example element
+     * which is composed of two elements) you have to add its name to the
+     * 'detail_element' array, add the name to the 'special_elements' list and
+     * define its required content in the function 'get_element_content'.
+     *  */
+    var special_elements = ["user",
+                            "type/analyzer"];
+
+    /* ignored elements */
+    var black_list_elements = ["pkg_name",
+                               "pkg_version",
+                               "pkg_release",
+                               "pkg_arch",
+                               "pkg_epoch"];
 
     var service = cockpit.dbus('org.freedesktop.problems');
     var problems = service.proxy('org.freedesktop.problems', '/org/freedesktop/problems');
@@ -125,11 +163,72 @@ $( document ).ready( function() {
 
     function create_detail(problem_data, problem_id) {
         var text = "";
+        /*  show detail_elements */
         for (i = 0; i < detail_elements.length; i++) {
             var elem = detail_elements[i];
-            if(problem_data.hasOwnProperty(elem)) {
+            text += create_detail_element(problem_data, problem_id, elem);
+        }
 
-                var problem_content = escapeHtml(problem_data[elem][2]);
+        /* display oneline elements from problem data (which are not on black list)*/
+        for (var elem in problem_data) {
+            if (problem_data[elem][2].indexOf('\n') > -1 || (problem_data[elem][0] & 1 /* binary */))
+                continue;
+            text += create_detail_element(problem_data, problem_id, elem);
+        }
+
+        /* display DATA_DIRECTORY path */
+        text += "<tr class=\"detail\"><td class=\"detail_label\">DATA_DIRECTORY</td><td class=\"detail_content\">" + problem_id + "</td></tr>";
+
+        /* display binary elements from problem data (which are not on black list)*/
+        for (var elem in problem_data) {
+            if ((problem_data[elem][0] & 1 /* binary */) == 0)
+                continue;
+            text += create_detail_element(problem_data, problem_id, elem);
+        }
+
+        /* display multiline elements from problem data (which are not on black list)*/
+        for (var elem in problem_data) {
+            text += create_detail_element(problem_data, problem_id, elem);
+        }
+
+        /* add instruction how to report problem if problem is not reported and is reportable */
+        if (!problem_data.hasOwnProperty("not-reportable")) {
+            var reported = false;
+
+            if (problem_data.hasOwnProperty("reported_to")) {
+                var reported_to = problem_data["reported_to"][2];
+                reported_to = reported_to.split("\n");
+
+                for (var i = 0; i < reported_to.length; ++i) {
+                    var line = reported_to[i];
+                    if (line.substring(0, 8) != "uReport:" && line.substring(0, 12) != "ABRT Server:" && line != "") {
+                        reported = true;
+                        break;
+                    }
+                }
+            }
+            /* bug is not reported */
+            if (reported == false) {
+                text += "<tr class=\"how_to_report\"><td colspan=\"2\"><div class=\"inline_block\">Please run the following command on the machine where the crash occurred in order to report the problem:<br/><samp>$ abrt-cli report " + problem_id + "</samp></div></td></tr>";
+            }
+        }
+
+        return text;
+    }
+
+    function create_detail_element(problem_data, problem_id, elem) {
+
+        var text = "";
+        /* skip this element if it is on black list */
+        if (black_list_elements.indexOf(elem) > -1)
+            return text;
+
+        if (problem_data.hasOwnProperty(elem) || special_elements.indexOf(elem) > -1) {
+
+            var elem_name = {"name": elem};
+            var problem_content = get_element_content(problem_data, elem_name);
+            elem = elem_name.name;
+            if (problem_content != "") {
 
                 /* clickable url in reported_to */
                 if (elem == "reported_to") {
@@ -140,8 +239,12 @@ $( document ).ready( function() {
                 if (problem_content.indexOf('\n') != -1) {
 
                     problem_content = problem_content.replace(/\n/g, "<br>");
+
                     /* bold variable 'ABC=abc' -> '<b>ABC=</b>abc' */
-                    problem_content = problem_content.replace(/(<br>[^=]+=|^[^=]+=)/g, "<b>$1</b>");
+                    /* we want to highlight only multiline elements */
+                    if (elem == "environ" || elem == "reported_to" || elem == "os_info" ) {
+                        problem_content = problem_content.replace(/(<br>[^=]+=|^[^=]+=)/g, "<b>$1</b>");
+                    }
 
                     text += "<tr class=\"detail detail_dropdown\"><td class=\"detail_label\">" + elem;
                     text += "</td><td class=\"detail_content\"><span class=\"detail_dropdown_span fa fa-angle-right\"></span></td></tr>";
@@ -151,34 +254,93 @@ $( document ).ready( function() {
                     text += "<tr class=\"detail\"><td class=\"detail_label\">" + elem;
                 }
                 text += "</td><td class=\"detail_content\">" + problem_content + "</td></tr>";
-
             }
         }
-
-        /* add instruction how to report problem if problem is not reported and is reportable */
-        if (!problem_data.hasOwnProperty("not-reportable")) {
-            if (problem_data.hasOwnProperty("reported_to")) {
-                var reported_to = problem_data["reported_to"][2];
-                reported_to = reported_to.split("\n");
-
-                var reported = false;
-                for (var i = 0; i < reported_to.length; ++i) {
-                    var line = reported_to[i];
-                    if (line.substring(0, 8) != "uReport:" && line.substring(0, 12) != "ABRT Server:" && line != "") {
-                        reported = true;
-                        break;
-                    }
-                }
-
-                /* bug is not reported */
-                if (reported == false) {
-                    text += "<tr class=\"how_to_report\"><td colspan=\"2\"><div class=\"inline_block\">Please run the following command on the machine where the crash occurred in order to report the problem:<br/><samp>$ abrt-cli report " + problem_id + "</samp></div></td></tr>";
-                }
-            }
-        }
-
         return text;
     }
+
+    function get_element_content(problem_data, elem) {
+
+        /* ordinary element */
+        if(problem_data.hasOwnProperty(elem.name)) {
+            return get_element_content_if_exist(problem_data, elem.name);
+        }
+
+        /* special element */
+        var text = "";
+        switch (elem.name) {
+            case "user": /*  username (uid)*/
+                var username = get_element_content_if_exist(problem_data, "username");
+                var uid = get_element_content_if_exist(problem_data, "uid");
+                if (username != "" && uid != "") {
+                    text += username;
+                    text += " (" + uid + ")";
+                    break;
+                }
+                if (uid != "") {
+                    elem.name = "uid";
+                    text += uid;
+                    break;
+                }
+                if (username != "") {
+                    text += username;
+                    break;
+                }
+                break;
+            case "type/analyzer": /*  type/analyzer */
+                var type = get_element_content_if_exist(problem_data, "type");
+                var analyzer = get_element_content_if_exist(problem_data, "analyzer");
+                if (type != "" && analyzer != "") {
+                    text += type;
+                    text += "/" + analyzer;
+                    break;
+                }
+                if (analyzer == "") {
+                    elem.name = "type";
+                    text += type;
+                    break;
+                }
+                break;
+            default:
+                break;
+        }
+        return text;
+    }
+
+    /* get content of element 'elem' if exist and remove it from the problem_data */
+    function get_element_content_if_exist(problem_data, elem) {
+        if(problem_data.hasOwnProperty(elem)) {
+            var content = problem_data[elem][2];
+
+            if (elem == "time" || elem == "last_occurrence") {
+                content = new Date(parseInt(content) * 1000).toLocaleString();
+            }
+
+            /* binary file */
+            if (problem_data[elem][0] & 1 /* 1 is flag for binary file */) {
+               var size = humanSize(problem_data[elem][1]);
+               content = "$DATA_DIRECTORY/" + elem + " (binary file, " + size + ")";
+            }
+
+            /* remove the shown element */
+            delete problem_data[elem];
+            return escapeHtml(content);
+        }
+        return "";
+    }
+
+    function humanSize(bytes) {
+        var thresh = 1024;
+        var units = ['KiB','MiB','GiB','TiB','PiB','EiB','ZiB','YiB'];
+
+        if(bytes < thresh) return bytes + ' B';
+        var u = -1;
+        do {
+            bytes /= thresh;
+            ++u;
+        } while(bytes >= thresh);
+        return bytes.toFixed(1)+' '+units[u];
+    };
 
     /* dropdown multiline detail handler */
     $( document ).on('click', '.detail_dropdown', function( event ) {
