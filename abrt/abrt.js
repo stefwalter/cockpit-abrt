@@ -246,6 +246,11 @@ $( document ).ready( function() {
             elem = elem_name.name;
             if (problem_content != "") {
 
+                var additional_classes = "";
+                if (elem == "docker_inspect") {
+                    additional_classes += "pre ";
+                }
+
                 /* clickable url in reported_to */
                 if (elem == "reported_to") {
                     /* AAA URL=aaa BBB=bbb -> AAA URL=<a href="aaa" ...>aaa</a> BBB=bbb */
@@ -269,7 +274,7 @@ $( document ).ready( function() {
                 else {
                     text += "<tr class=\"detail\"><td class=\"detail_label\">" + elem;
                 }
-                text += "</td><td class=\"detail_content\">" + problem_content + "</td></tr>";
+                text += "</td><td class=\"detail_content " + additional_classes + "\">" + problem_content + "</td></tr>";
             }
         }
         return text;
