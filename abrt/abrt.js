@@ -251,6 +251,11 @@ $( document ).ready( function() {
                     additional_classes += "pre ";
                 }
 
+                if (elem == "dso_list") {
+                    /* bold name of packages */
+                    problem_content = problem_content.replace(/^(\S+\s+)(\S+)(.*)$/gm, "$1<b>$2</b>$3");
+                }
+
                 /* clickable url in reported_to */
                 if (elem == "reported_to") {
                     /* AAA URL=aaa BBB=bbb -> AAA URL=<a href="aaa" ...>aaa</a> BBB=bbb */
