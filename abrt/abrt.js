@@ -169,26 +169,42 @@ $( document ).ready( function() {
             text += create_detail_element(problem_data, problem_id, elem);
         }
 
+        /* get all keys from problem data (array of all element's names) */
+        var problem_data_elems = Object.keys(problem_data);
+        problem_data_elems.sort();
+
         /* display oneline elements from problem data (which are not on black list)*/
-        for (var elem in problem_data) {
-            if (problem_data[elem][2].indexOf('\n') > -1 || (problem_data[elem][0] & 1 /* binary */))
+        for (var elem_index in problem_data_elems) {
+
+            var elem_name = problem_data_elems[elem_index];
+            var elem_data = problem_data[elem_name];
+            if (elem_data[2].indexOf('\n') > -1 || (elem_data[0] & 1 /* binary */))
                 continue;
-            text += create_detail_element(problem_data, problem_id, elem);
+            text += create_detail_element(problem_data, problem_id, elem_name);
+
+            delete problem_data_elems[elem_index];
         }
 
         /* display DATA_DIRECTORY path */
         text += "<tr class=\"detail\"><td class=\"detail_label\">DATA_DIRECTORY</td><td class=\"detail_content\">" + problem_id + "</td></tr>";
 
         /* display binary elements from problem data (which are not on black list)*/
-        for (var elem in problem_data) {
-            if ((problem_data[elem][0] & 1 /* binary */) == 0)
+        for (var elem_index in problem_data_elems) {
+
+            var elem_name = problem_data_elems[elem_index];
+            var elem_data = problem_data[elem_name];
+            if ((elem_data[0] & 1 /* binary */) == 0)
                 continue;
-            text += create_detail_element(problem_data, problem_id, elem);
+            text += create_detail_element(problem_data, problem_id, elem_name);
+
+            delete problem_data_elems[elem_index];
         }
 
         /* display multiline elements from problem data (which are not on black list)*/
-        for (var elem in problem_data) {
-            text += create_detail_element(problem_data, problem_id, elem);
+        for (var elem_index in problem_data_elems) {
+
+            var elem_name = problem_data_elems[elem_index];
+            text += create_detail_element(problem_data, problem_id, elem_name);
         }
 
         /* add instruction how to report problem if problem is not reported and is reportable */
