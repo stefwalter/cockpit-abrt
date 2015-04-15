@@ -264,13 +264,9 @@ $( document ).ready( function() {
 
                 if (problem_content.indexOf('\n') != -1) {
 
-                    problem_content = problem_content.replace(/\n/g, "<br>");
+                    problem_content = highlight_multiline_items(problem_content, elem);
 
-                    /* bold variable 'ABC=abc' -> '<b>ABC=</b>abc' */
-                    /* we want to highlight only multiline elements */
-                    if (elem == "environ" || elem == "reported_to" || elem == "os_info" ) {
-                        problem_content = problem_content.replace(/(<br>[^=]+=|^[^=]+=)/g, "<b>$1</b>");
-                    }
+                    problem_content = problem_content.replace(/\n/g, "<br>");
 
                     text += "<tr class=\"detail detail_dropdown\"><td class=\"detail_label\">" + elem;
                     text += "</td><td class=\"detail_content\"><span class=\"detail_dropdown_span fa fa-angle-right\"></span></td></tr>";
@@ -283,6 +279,29 @@ $( document ).ready( function() {
             }
         }
         return text;
+    }
+
+    function highlight_multiline_items(problem_content, elem) {
+
+        /* bold variable 'ABC=abc' -> '<b>ABC=</b>abc' */
+        /* we want to highlight only multiline elements */
+        if (problem_content.match(/^[^=\n]+=[^\n]*/) != null) {
+            problem_content = problem_content.replace(/^([^=\s]+=)(.*)$/gm, "<b>$1</b>$2");
+        }
+
+        /* bold variable 'ABC: abc' -> '<b>ABC: </b>abc' */
+        if (problem_content.match(/^[^:\n]+:[^\n]*/) != null && elem != "dead.letter") {
+            problem_content = problem_content.replace(/^([^:=;\d]+ ?:)(.*)$/gm, "<b>$1</b>$2");
+            problem_content = problem_content.replace(/^(\[[^:=;]+\] ?:)(.*)$/gm, "<b>$1</b>$2");
+        }
+
+        /* bold titles of items in open_fds */
+        if (elem == "open_fds") {
+            problem_content = problem_content.replace(/^(\d+:.*\d+)$/gm, "<b>$1</b>");
+        }
+
+        return problem_content;
+
     }
 
     function get_element_content(problem_data, elem) {
