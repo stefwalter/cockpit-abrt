@@ -169,26 +169,42 @@ $( document ).ready( function() {
             text += create_detail_element(problem_data, problem_id, elem);
         }
 
+        /* get all keys from problem data (array of all element's names) */
+        var problem_data_elems = Object.keys(problem_data);
+        problem_data_elems.sort();
+
         /* display oneline elements from problem data (which are not on black list)*/
-        for (var elem in problem_data) {
-            if (problem_data[elem][2].indexOf('\n') > -1 || (problem_data[elem][0] & 1 /* binary */))
+        for (var elem_index in problem_data_elems) {
+
+            var elem_name = problem_data_elems[elem_index];
+            var elem_data = problem_data[elem_name];
+            if (elem_data[2].indexOf('\n') > -1 || (elem_data[0] & 1 /* binary */))
                 continue;
-            text += create_detail_element(problem_data, problem_id, elem);
+            text += create_detail_element(problem_data, problem_id, elem_name);
+
+            delete problem_data_elems[elem_index];
         }
 
         /* display DATA_DIRECTORY path */
         text += "<tr class=\"detail\"><td class=\"detail_label\">DATA_DIRECTORY</td><td class=\"detail_content\">" + problem_id + "</td></tr>";
 
         /* display binary elements from problem data (which are not on black list)*/
-        for (var elem in problem_data) {
-            if ((problem_data[elem][0] & 1 /* binary */) == 0)
+        for (var elem_index in problem_data_elems) {
+
+            var elem_name = problem_data_elems[elem_index];
+            var elem_data = problem_data[elem_name];
+            if ((elem_data[0] & 1 /* binary */) == 0)
                 continue;
-            text += create_detail_element(problem_data, problem_id, elem);
+            text += create_detail_element(problem_data, problem_id, elem_name);
+
+            delete problem_data_elems[elem_index];
         }
 
         /* display multiline elements from problem data (which are not on black list)*/
-        for (var elem in problem_data) {
-            text += create_detail_element(problem_data, problem_id, elem);
+        for (var elem_index in problem_data_elems) {
+
+            var elem_name = problem_data_elems[elem_index];
+            text += create_detail_element(problem_data, problem_id, elem_name);
         }
 
         /* add instruction how to report problem if problem is not reported and is reportable */
@@ -230,6 +246,16 @@ $( document ).ready( function() {
             elem = elem_name.name;
             if (problem_content != "") {
 
+                var additional_classes = "";
+                if (elem == "docker_inspect") {
+                    additional_classes += "pre ";
+                }
+
+                if (elem == "dso_list") {
+                    /* bold name of packages */
+                    problem_content = problem_content.replace(/^(\S+\s+)(\S+)(.*)$/gm, "$1<b>$2</b>$3");
+                }
+
                 /* clickable url in reported_to */
                 if (elem == "reported_to") {
                     /* AAA URL=aaa BBB=bbb -> AAA URL=<a href="aaa" ...>aaa</a> BBB=bbb */
@@ -238,13 +264,9 @@ $( document ).ready( function() {
 
                 if (problem_content.indexOf('\n') != -1) {
 
-                    problem_content = problem_content.replace(/\n/g, "<br>");
+                    problem_content = highlight_multiline_items(problem_content, elem);
 
-                    /* bold variable 'ABC=abc' -> '<b>ABC=</b>abc' */
-                    /* we want to highlight only multiline elements */
-                    if (elem == "environ" || elem == "reported_to" || elem == "os_info" ) {
-                        problem_content = problem_content.replace(/(<br>[^=]+=|^[^=]+=)/g, "<b>$1</b>");
-                    }
+                    problem_content = problem_content.replace(/\n/g, "<br>");
 
                     text += "<tr class=\"detail detail_dropdown\"><td class=\"detail_label\">" + elem;
                     text += "</td><td class=\"detail_content\"><span class=\"detail_dropdown_span fa fa-angle-right\"></span></td></tr>";
@@ -253,10 +275,33 @@ $( document ).ready( function() {
                 else {
                     text += "<tr class=\"detail\"><td class=\"detail_label\">" + elem;
                 }
-                text += "</td><td class=\"detail_content\">" + problem_content + "</td></tr>";
+                text += "</td><td class=\"detail_content " + additional_classes + "\">" + problem_content + "</td></tr>";
             }
         }
         return text;
+    }
+
+    function highlight_multiline_items(problem_content, elem) {
+
+        /* bold variable 'ABC=abc' -> '<b>ABC=</b>abc' */
+        /* we want to highlight only multiline elements */
+        if (problem_content.match(/^[^=\n]+=[^\n]*/) != null) {
+            problem_content = problem_content.replace(/^([^=\s]+=)(.*)$/gm, "<b>$1</b>$2");
+        }
+
+        /* bold variable 'ABC: abc' -> '<b>ABC: </b>abc' */
+        if (problem_content.match(/^[^:\n]+:[^\n]*/) != null && elem != "dead.letter") {
+            problem_content = problem_content.replace(/^([^:=;\d]+ ?:)(.*)$/gm, "<b>$1</b>$2");
+            problem_content = problem_content.replace(/^(\[[^:=;]+\] ?:)(.*)$/gm, "<b>$1</b>$2");
+        }
+
+        /* bold titles of items in open_fds */
+        if (elem == "open_fds") {
+            problem_content = problem_content.replace(/^(\d+:.*\d+)$/gm, "<b>$1</b>");
+        }
+
+        return problem_content;
+
     }
 
     function get_element_content(problem_data, elem) {

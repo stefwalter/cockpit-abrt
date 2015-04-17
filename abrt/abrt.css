@@ -90,3 +90,9 @@ table
     display: inline-block;
     text-align: left;
 }
+
+.pre
+{
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
