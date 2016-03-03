@@ -1,12 +1,4 @@
 $( document ).ready( function() {
-    /* main cockpit elements */
-    var required_elements = ["time",
-                             "reason",
-                             "package",
-                             "container_image",
-                             "container_id",
-                             "count"];
-
     /* ordered detail elements */
     var detail_elements = ["exploitable",
                            "not-reportable",
@@ -40,48 +32,55 @@ $( document ).ready( function() {
                                "pkg_arch",
                                "pkg_epoch"];
 
-    var service = cockpit.dbus('org.freedesktop.problems');
-    var problems = service.proxy('org.freedesktop.problems', '/org/freedesktop/problems');
+    var problems_client = cockpit.dbus('org.freedesktop.problems');
+    var service = problems_client.proxy('org.freedesktop.Problems2', '/org/freedesktop/Problems2');
+
+    var service = client.proxy('org.freedesktop.Problems2', '/org/freedesktop/Problems2');
 
     /* load all problems */
-    problems.wait(load_problems);
+    service.wait(function() {
+        this.GetProblems(0, {}).done(function(args, options) {
+            args.forEach(problem_path_to_rown);
+        });
+    });
 
-    function load_problems() {
-        problems.GetProblems()
-            .done(function(args, options) {
-                args.forEach(function(problem_id) {
-                    problems.GetProblemData(problem_id)
-                        .done(function(problem_data, options) {
-                            $("#problems tbody").append(problem_data_to_row(problem_data, problem_id));
-                });
-            });
+    function problem_path_to_rown(problem_path) {
+        proxy = problems_client.proxy('org.freedesktop.Problems2.Entry', problem_path)
+        proxy.wait(function() {
+            console.log("valid = " + this.valid +  " : " + this.path);
+            if (this.valid) {
+                $("#problems tbody").append(problem_to_row(this));
+            }
         });
     }
 
-    function problem_data_to_row(problem_data, problem_id) {
+    $(service).on("Crash", function(event, problem_path, uid) {
+            problem_path_to_rown(problem_path);
+    });
+
+    function problem_to_row(problem) {
         var row = "";
 
-        required_elements.forEach(function(elem) {
-            row += "<td>" + format_problem_data(problem_data, elem) + "</td>";
+        row += "<td>" + new Date(parseInt(problem.LastOccurrence) * 1000).toLocaleString() + "</td>";
+        row += "<td>" + escapeHtml(problem.Reason) + "</td>";
+        row += "<td>" + escapeHtml(problem.Package[0]) + "</td>";
+
+        var container_elements = ["container_image", "container_id"];
+        var data = problem.ReadElements(container_elements, 0x4)
+        container_elements.forEach(function(elem) {
+            if (!problem.hasOwnProperty(elem)) {
+                row += "<td></td>";
+            }
+            else {
+                row += "<td>" + escapeHtml(data[elem]) + "</td>";
+            }
         });
+
+        row += "<td>" + escapeHtml(problem.Count) + "</td>";
 
         row += get_action_btn();
 
-        return "<tr id=\"" + problem_id + "\" class=\"problem\">" + row + "</tr><tr class=\"detail_list hidden\"><td colspan=\"7\"></td></tr>";
-    }
-
-    function format_problem_data(problem_data, elem) {
-        if (!problem_data.hasOwnProperty(elem)) {
-            return "";
-        }
-
-        var value = problem_data[elem][2];
-
-        if (elem == "time") {
-            value = new Date(parseInt(value) * 1000).toLocaleString();
-        }
-
-        return escapeHtml(value);
+        return "<tr id=\"" + problem.path + "\" class=\"problem\">" + row + "</tr><tr class=\"detail_list hidden\"><td colspan=\"7\"></td></tr>";
     }
 
     function get_action_btn() {
@@ -121,52 +120,49 @@ $( document ).ready( function() {
 
     /* problem info click handler */
     $( document ).on('click', '.problem', function() {
-        problem_detail(this);
+        on_problem_row_click(this);
     });
 
-    function problem_detail( problem ) {
-        var detail_row = $(problem).next();
+    function on_problem_row_click(problem_html) {
+        var detail_row = $(problem_html).next();
 
         /* detail is shown */
-        if ($(problem).hasClass("selected_problem")) {
+        if ($(problem_html).hasClass("selected_problem")) {
 
-            $(problem).removeClass("selected_problem");
+            $(problem_html).removeClass("selected_problem");
             $(detail_row).addClass("hidden");
         }
         /* detail is not displayed, but it is loaded */
         else if ($(detail_row).hasClass("loaded")) {
-            $(problem).addClass("selected_problem");
+            $(problem_html).addClass("selected_problem");
             $(detail_row).removeClass("hidden");
         }
         /* detail is not displayed nor loaded */
         else {
-            create_detail_table(problem);
+            create_detail_table(problem_html);
 
-            $(problem).addClass("selected_problem");
+            $(problem_html).addClass("selected_problem");
             $(detail_row)
                 .removeClass("hidden")
                 .addClass("loaded");
         }
     }
 
-    function create_detail_table(row) {
-        var problem_id = $(row).attr('id');
+    function create_detail_table(problem_html) {
+        var problem_path = $(problem_html).attr('id');
 
-        problems.GetProblemData(problem_id)
-            .done(function(problem_data, options) {
-
-                var result = create_detail(problem_data, problem_id);
-
-                $(row).next().children().append(result);
-            });
+        service.GetProblemData(problem_path).done(function(args, options){
+            var result = create_problem_detail(args);
+            $(problem_html).next().children().append(result);
+        });
     }
 
-    function create_detail(problem_data, problem_id) {
+    function create_problem_detail(problem_data) {
         var text = "";
         /*  show detail_elements */
         for (i = 0; i < detail_elements.length; i++) {
             var elem = detail_elements[i];
-            text += create_detail_element(problem_data, problem_id, elem);
+            text += create_detail_element(problem_data, elem);
         }
 
         /* get all keys from problem data (array of all element's names) */
@@ -180,13 +176,13 @@ $( document ).ready( function() {
             var elem_data = problem_data[elem_name];
             if (elem_data[2].indexOf('\n') > -1 || (elem_data[0] & 1 /* binary */))
                 continue;
-            text += create_detail_element(problem_data, problem_id, elem_name);
+            text += create_detail_element(problem_data, elem_name);
 
             delete problem_data_elems[elem_index];
         }
 
         /* display DATA_DIRECTORY path */
-        text += "<tr class=\"detail\"><td class=\"detail_label\">DATA_DIRECTORY</td><td class=\"detail_content\">" + problem_id + "</td></tr>";
+        text += "<tr class=\"detail\"><td class=\"detail_label\">DATA_DIRECTORY</td><td class=\"detail_content\">" + problem_data["Directory"] + "</td></tr>";
 
         /* display binary elements from problem data (which are not on black list)*/
         for (var elem_index in problem_data_elems) {
@@ -195,7 +191,7 @@ $( document ).ready( function() {
             var elem_data = problem_data[elem_name];
             if ((elem_data[0] & 1 /* binary */) == 0)
                 continue;
-            text += create_detail_element(problem_data, problem_id, elem_name);
+            text += create_detail_element(problem_data, elem_name);
 
             delete problem_data_elems[elem_index];
         }
@@ -204,7 +200,7 @@ $( document ).ready( function() {
         for (var elem_index in problem_data_elems) {
 
             var elem_name = problem_data_elems[elem_index];
-            text += create_detail_element(problem_data, problem_id, elem_name);
+            text += create_detail_element(problem_data, elem_name);
         }
 
         /* add instruction how to report problem if problem is not reported and is reportable */
@@ -225,14 +221,14 @@ $( document ).ready( function() {
             }
             /* bug is not reported */
             if (reported == false) {
-                text += "<tr class=\"how_to_report\"><td colspan=\"2\"><div class=\"inline_block\">Please run the following command on the machine where the crash occurred in order to report the problem:<br/><samp>$ abrt-cli report " + problem_id + "</samp></div></td></tr>";
+                text += "<tr class=\"how_to_report\"><td colspan=\"2\"><div class=\"inline_block\">Please run the following command on the machine where the crash occurred in order to report the problem:<br/><samp>$ abrt-cli report " + problem_data["Directory"] + "</samp></div></td></tr>";
             }
         }
 
         return text;
     }
 
-    function create_detail_element(problem_data, problem_id, elem) {
+    function create_detail_element(problem_data, elem) {
 
         var text = "";
         /* skip this element if it is on black list */
@@ -301,7 +297,6 @@ $( document ).ready( function() {
         }
 
         return problem_content;
-
     }
 
     function get_element_content(problem_data, elem) {
@@ -428,7 +423,7 @@ $( document ).ready( function() {
 
     function delete_problem( problem ) {
         var problem_id = $(problem).attr('id');
-        var del = problems.DeleteProblem([problem_id]);
+        var del = service.DeleteProblems([problem_id]);
         del.done(function() {
             //console.log(problem_id + " deleted.");
             $(problem).addClass("hidden");
