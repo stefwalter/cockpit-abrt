@@ -35,10 +35,17 @@ $( document ).ready( function() {
     var problems_client = cockpit.dbus('org.freedesktop.problems');
     var service = problems_client.proxy('org.freedesktop.Problems2', '/org/freedesktop/Problems2');
 
-    var service = client.proxy('org.freedesktop.Problems2', '/org/freedesktop/Problems2');
+    var reportd_client  = cockpit.dbus('org.freedesktop.reportd', {bus:'session'});
+    var reportd = reportd_client.proxy('org.freedesktop.reportd.Service', '/org/freedesktop/reportd/Service');
+
+    reportd.wait(function() {
+            console.log("reportd proxy: " + this.valid);
+    });
 
     /* load all problems */
     service.wait(function() {
+        console.log("problems proxy: " + this.valid);
+
         this.GetProblems(0, {}).done(function(args, options) {
             args.forEach(problem_path_to_rown);
         });
@@ -84,23 +91,19 @@ $( document ).ready( function() {
     }
 
     function get_action_btn() {
-        var btn = "<td class=\"action_btn\">";
+        var btn = ""
+        btn += "<td class=\"action_btn\">";
         btn += "<div class=\"btn-group\">";
         btn += "<button class=\"btn btn-default main-btn\" title=\"\">";
         btn += "Delete";
-
-/* Prepared for adding another functionality
- *
         btn += "</button>";
+
         btn += "<button class=\"btn btn-default dropdown-toggle\" data-toggle=\"dropdown\">";
         btn += "<span class=\"caret\"></span>";
         btn += "</button>";
 
         btn += "<ul class=\"dropdown-menu\" role=\"menu\">";
-        btn += get_btn_dropdown_li("Report");
-        btn += get_btn_dropdown_li("Detail");
         btn += "</ul>";
-*/
 
         btn += "</div>";
         btn += "</td>";
@@ -108,8 +111,9 @@ $( document ).ready( function() {
         return btn;
     }
 
-    function get_btn_dropdown_li(label) {
-        var li = "<li class=\"presentation\">";
+    function get_btn_dropdown_li(label, tag) {
+        var li = "";
+        li = "<li class=\"presentation\" data-tag=\"" + tag + "\">";
         li += "<a role=\"menuitem\">";
         li += "<span>" + label + "</span>";
         li += "</a>";
@@ -153,7 +157,17 @@ $( document ).ready( function() {
 
         service.GetProblemData(problem_path).done(function(args, options){
             var result = create_problem_detail(args);
-            $(problem_html).next().children().append(result);
+            var problem_detail_row = $(problem_html).next().children()
+            problem_detail_row.append(result);
+
+            if (reportd.valid) {
+                reportd.GetWorkflows(problem_path).done(function(args, options){
+                    for (w of args) {
+                        console.log("Adding " + w[2]);
+                        $(problem_html).find(".dropdown-menu").append(get_btn_dropdown_li(w[1], w[0]));
+                    }
+                });
+            }
         });
     }
 
@@ -418,6 +432,23 @@ $( document ).ready( function() {
     $( document ).on('click', '.delete-all-btn', function( event ) {
         $(".problem").each(function() {
             delete_problem(this);
+        });
+    });
+
+    $( document ).on('click', '.presentation', function( event ) {
+        event.stopPropagation();
+        var problem = $(this).closest('tr');
+
+        var wf_id = $(this).data("tag");
+        var problem_id = $(problem).attr('id');
+        console.log("Creating a new task for workflow: " + wf_id + " and problem " + problem_id);
+
+        reportd.CreateTask(wf_id, problem_id).done(function(task_path, options) {
+            console.log("Task created");
+            var task = reportd_client.proxy("org.freedesktop.reportd.Task", task_path);
+            task.wait(function () {
+                this.Start();
+            });
         });
     });
 
