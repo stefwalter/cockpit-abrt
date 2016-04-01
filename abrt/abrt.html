@@ -6,26 +6,40 @@
 </head>
 <body>
     <div class="container-fluid">
-        <div class="panel panel-default">
-            <table id="problems" class="table">
-                <thead>
-                    <tr>
-                        <th>Time</th>
-                        <th>Reason</th>
-                        <th>Package</th>
-                        <th>Image</th>
-                        <th>Container</th>
-                        <th>Count</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                </tbody>
-            </table>
-        </div>
-        <div class="delete_all_btn">
-            <button class="btn btn-default delete-all-btn">Delete all</button>
-        </div>
+        <div id="problems-browser">
+            <div class="panel panel-default">
+                <table id="problems" class="table">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Reason</th>
+                            <th>Package</th>
+                            <th>Image</th>
+                            <th>Container</th>
+                            <th>Count</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+            <div class="delete_all_btn">
+                <button class="btn btn-default delete-all-btn">Delete all</button>
+            </div>
+        </div> <!-- problems-browser -->
+        <div id="report-task-progress" style="display: none;">
+            <br>
+            <div>
+                <button class="btn btn-default cancel-task-btn">Cancel</button>
+                <button class="btn btn-default back-to-browser-btn">Back to Problems</button>
+            </div>
+            <br>
+            <div class="panel panel-default">
+                <div id="report-task-progress-log"></div>
+                <div id="report-task-progress-spiner" class="spinner spinner-xs"></div>
+            </div>
+        </div> <!-- reprot-task-pgoress -->
     </div>
     <script src="../base1/jquery.js"></script>
     <script src="../base1/cockpit.js"></script>

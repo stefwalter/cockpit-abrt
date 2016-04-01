@@ -435,6 +435,16 @@ $( document ).ready( function() {
         });
     });
 
+    $( document ).on('click', '.cancel-task-btn', function( event ) {
+        $("#problems-browser").toggle();
+        $("#report-task-progress").toggle();
+    });
+
+    $( document ).on('click', '.back-to-browser-btn', function( event ) {
+        $("#problems-browser").toggle();
+        $("#report-task-progress").toggle();
+    });
+
     $( document ).on('click', '.presentation', function( event ) {
         event.stopPropagation();
         var problem = $(this).closest('tr');
@@ -446,7 +456,29 @@ $( document ).ready( function() {
         reportd.CreateTask(wf_id, problem_id).done(function(task_path, options) {
             console.log("Task created");
             var task = reportd_client.proxy("org.freedesktop.reportd.Task", task_path);
+
             task.wait(function () {
+                $("#problems-browser").toggle();
+                $("#report-task-progress").toggle();
+                $("#report-task-progress-log").empty();
+                $(".cancel-task-btn").show();
+                $(".back-to-browser-btn").hide();
+                $("report-task-progress-spiner").show();
+
+                $(this).on("changed", function(event, data) {
+                    console.log("Changed: " + data);
+                    if (data.hasOwnProperty("Status") && data.Status == "FINISHED") {
+                        $(".cancel-task-btn").hide();
+                        $(".back-to-browser-btn").show();
+                        $("#report-task-progress-spiner").hide();
+                    }
+                });
+
+                $(this).on("Progress", function(event, line) {
+                    log = line.replace(/(https?[^\s]+)(\s|$)/g, "URL=<a href=\"$1\" target=\"_blank\">$1</a>$2") + "<br/>"
+                    $("#report-task-progress-log").append(log);
+                });
+
                 this.Start();
             });
         });
@@ -472,4 +504,6 @@ $( document ).ready( function() {
             .replace(/'/g, "&#039;")
             .replace(/\//g, "&#x2F;")
     }
+
+    $("#report-task-progress").hide();
 });
