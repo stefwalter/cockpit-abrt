@@ -75,7 +75,7 @@ $( document ).ready( function() {
         var container_elements = ["container_image", "container_id"];
         var data = problem.ReadElements(container_elements, 0x4)
         container_elements.forEach(function(elem) {
-            if (!problem.hasOwnProperty(elem)) {
+            if (!data.hasOwnProperty(elem)) {
                 row += "<td></td>";
             }
             else {
