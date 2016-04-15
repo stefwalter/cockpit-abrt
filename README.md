@@ -29,6 +29,15 @@ Cockpit's directories for packages:
 See Cockpit's documentation for more details:
 http://cockpit-project.org/guide/latest/packages.html
 
+
+Used technologies
+------------------
+
+* [cockpit](http://cockpit-project.org/)
+* [libreport](https://github.com/abrt/libreport)
+* [abrt](https://github.com/abrt/abrt/tree/dbus_review)
+* [reportd](https://github.com/jfilak/reportd)
+
 TODO
 ====
 * register the Crash signal and update the UI when a new crash appears
