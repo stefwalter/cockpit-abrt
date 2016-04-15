@@ -76,6 +76,14 @@ table
 {
     text-align: right;
     margin-right: 15px;
+    float: right;
+}
+
+.authorize_btn
+{
+    float: left;
+    text-align: left;
+    margin-left: 15px;
 }
 
 .how_to_report

@@ -1,6 +1,7 @@
 $( document ).ready( function() {
     /* hide progress scree */
     $("#report-task-progress").hide();
+    $(".btn-de-authorize").hide();
 
     /* ordered detail elements */
     var detail_elements = ["exploitable",
@@ -37,6 +38,7 @@ $( document ).ready( function() {
 
     var problems_client = cockpit.dbus('org.freedesktop.problems');
     var service = problems_client.proxy('org.freedesktop.Problems2', '/org/freedesktop/Problems2');
+    var session;
 
     var reportd_client  = cockpit.dbus('org.freedesktop.reportd', {bus:'session'});
     var reportd = reportd_client.proxy('org.freedesktop.reportd.Service', '/org/freedesktop/reportd/Service');
@@ -47,6 +49,41 @@ $( document ).ready( function() {
 
     /* load all problems */
     service.wait(function() {
+        service.GetSession().done(function(session_path) {
+            session = problems_client.proxy('org.freedesktop.Problems2.Session', session_path);
+            $(session).on("AuthorizationChanged", function(event, new_status) {
+                problems_authorization_changed(new_status);
+            });
+        });
+
+        load_all_problems();
+    });
+
+    $(service).on("Crash", function(event, problem_path, uid) {
+        problems_client.proxy('org.freedesktop.Problems2.Entry', problem_path)
+             .wait(function() {add_problem_to_table(this);});
+    });
+
+    function problems_authorization_changed(new_status) {
+        if (new_status == 0) {
+            /* TODO: hide the spinner */
+            $(".btn-de-authorize").show();
+            $(".btn-authorize").hide();
+        }
+        else if (new_status == 2) {
+            $(".btn-de-authorize").hide();
+            $(".btn-authorize").show();
+        }
+        else {
+            console.log("Session authorization has changed: " + new_status);
+            return;
+        }
+
+        $("#problems tbody").empty();
+        load_all_problems();
+    }
+
+    function load_all_problems() {
         /* cache problem proxies - without this, cockpit can create only single
          * Entry proxy, all other proxies has the property 'invalid' set to
          * True. */
@@ -59,12 +96,7 @@ $( document ).ready( function() {
                 }
             });
         });
-    });
-
-    $(service).on("Crash", function(event, problem_path, uid) {
-        problems_client.proxy('org.freedesktop.Problems2.Entry', problem_path)
-             .wait(function() {add_problem_to_table(this);});
-    });
+    }
 
     function add_problem_to_table(problem_proxy) {
         if (!problem_proxy.valid) {
@@ -442,6 +474,31 @@ $( document ).ready( function() {
         $(".problem").each(function() {
             delete_problem(this);
         });
+    });
+
+    /* Authorize btn handler */
+    $( document ).on('click', '.btn-authorize', function( event ) {
+        var retval = session.Authorize({});
+        switch(retval) {
+            case -1:
+                console.log("Authorization error");
+                break;
+            case 0:
+                console.log("Authorized: no need to do any action");
+                break;
+            case 1:
+                /* TODO: show a spinner */
+                break;
+            case 2:
+                /* ignore */
+                console.log("Authorization is already pending");
+                break;
+        }
+    });
+
+    /* Deauthorize btn handler */
+    $( document ).on('click', '.btn-de-authorize', function( event ) {
+        session.Close();
     });
 
     $( document ).on('click', '.cancel-task-btn', function( event ) {
