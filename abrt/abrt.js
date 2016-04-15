@@ -44,8 +44,6 @@ $( document ).ready( function() {
 
     /* load all problems */
     service.wait(function() {
-        console.log("problems proxy: " + this.valid);
-
         this.GetProblems(0, {}).done(function(args, options) {
             args.forEach(problem_path_to_rown);
         });
@@ -54,9 +52,15 @@ $( document ).ready( function() {
     function problem_path_to_rown(problem_path) {
         proxy = problems_client.proxy('org.freedesktop.Problems2.Entry', problem_path)
         proxy.wait(function() {
-            console.log("valid = " + this.valid +  " : " + this.path);
             if (this.valid) {
-                $("#problems tbody").append(problem_to_row(this));
+                row = $("#problems tbody").append(problem_to_row(this));
+                if (reportd.valid) {
+                    reportd.GetWorkflows(problem_path).done(function(args, options) {
+                        for (w of args) {
+                            row.find(".dropdown-menu").append(get_btn_dropdown_li(w[1], w[0]));
+                        }
+                    });
+                }
             }
         });
     }
@@ -159,15 +163,6 @@ $( document ).ready( function() {
             var result = create_problem_detail(args);
             var problem_detail_row = $(problem_html).next().children()
             problem_detail_row.append(result);
-
-            if (reportd.valid) {
-                reportd.GetWorkflows(problem_path).done(function(args, options){
-                    for (w of args) {
-                        console.log("Adding " + w[2]);
-                        $(problem_html).find(".dropdown-menu").append(get_btn_dropdown_li(w[1], w[0]));
-                    }
-                });
-            }
         });
     }
 
@@ -451,10 +446,8 @@ $( document ).ready( function() {
 
         var wf_id = $(this).data("tag");
         var problem_id = $(problem).attr('id');
-        console.log("Creating a new task for workflow: " + wf_id + " and problem " + problem_id);
 
         reportd.CreateTask(wf_id, problem_id).done(function(task_path, options) {
-            console.log("Task created");
             var task = reportd_client.proxy("org.freedesktop.reportd.Task", task_path);
 
             task.wait(function () {
@@ -466,7 +459,6 @@ $( document ).ready( function() {
                 $("report-task-progress-spiner").show();
 
                 $(this).on("changed", function(event, data) {
-                    console.log("Changed: " + data);
                     if (data.hasOwnProperty("Status") && data.Status == "FINISHED") {
                         $(".cancel-task-btn").hide();
                         $(".back-to-browser-btn").show();
@@ -488,7 +480,6 @@ $( document ).ready( function() {
         var problem_id = $(problem).attr('id');
         var del = service.DeleteProblems([problem_id]);
         del.done(function() {
-            //console.log(problem_id + " deleted.");
             $(problem).addClass("hidden");
             /* hide also the problem description */
             $(problem).next().addClass("hidden");
