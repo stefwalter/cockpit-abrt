@@ -1,4 +1,7 @@
 $( document ).ready( function() {
+    /* hide progress scree */
+    $("#report-task-progress").hide();
+
     /* ordered detail elements */
     var detail_elements = ["exploitable",
                            "not-reportable",
@@ -44,30 +47,41 @@ $( document ).ready( function() {
 
     /* load all problems */
     service.wait(function() {
-        this.GetProblems(0, {}).done(function(args, options) {
-            args.forEach(problem_path_to_rown);
+        /* cache problem proxies - without this, cockpit can create only single
+         * Entry proxy, all other proxies has the property 'invalid' set to
+         * True. */
+        var problems = problems_client.proxies("org.freedesktop.Problems2.Entry", "/org/freedesktop/Problems2/Entry").wait(function() {
+            /* create table rows only for own problems - the problems variable
+             * includes proxies for not accessible problems too */
+            service.GetProblems(0, {}).done(function(problem_paths, options) {
+                for (var i in problem_paths) {
+                    add_problem_to_table(problems[problem_paths[i]]);
+                }
+            });
         });
     });
-
-    function problem_path_to_rown(problem_path) {
-        proxy = problems_client.proxy('org.freedesktop.Problems2.Entry', problem_path)
-        proxy.wait(function() {
-            if (this.valid) {
-                row = $("#problems tbody").append(problem_to_row(this));
-                if (reportd.valid) {
-                    reportd.GetWorkflows(problem_path).done(function(args, options) {
-                        for (w of args) {
-                            row.find(".dropdown-menu").append(get_btn_dropdown_li(w[1], w[0]));
-                        }
-                    });
-                }
-            }
-        });
-    }
 
     $(service).on("Crash", function(event, problem_path, uid) {
-            problem_path_to_rown(problem_path);
+        problems_client.proxy('org.freedesktop.Problems2.Entry', problem_path)
+             .wait(function() {add_problem_to_table(this);});
     });
+
+    function add_problem_to_table(problem_proxy) {
+        if (!problem_proxy.valid) {
+            console.log("Invalid Entry proxy '" + problem_proxy.path + "'");
+            return;
+        }
+
+        var problems = $("#problems tbody").append(problem_to_row(problem_proxy));
+        if (reportd.valid) {
+            var row = problems.children(".problem").last();
+            reportd.GetWorkflows(problem_proxy.path).done(function(args, options) {
+                for (w of args) {
+                    row.find(".dropdown-menu").append(get_btn_dropdown_li(w[1], w[0]));
+                }
+            });
+        }
+    }
 
     function problem_to_row(problem) {
         var row = "";
@@ -495,6 +509,4 @@ $( document ).ready( function() {
             .replace(/'/g, "&#039;")
             .replace(/\//g, "&#x2F;")
     }
-
-    $("#report-task-progress").hide();
 });
