@@ -123,14 +123,18 @@ $( document ).ready( function() {
         row += "<td>" + escapeHtml(problem.Package[0]) + "</td>";
 
         var container_elements = ["container_image", "container_id"];
-        var data = problem.ReadElements(container_elements, 0x4)
         container_elements.forEach(function(elem) {
-            if (!data.hasOwnProperty(elem)) {
-                row += "<td></td>";
-            }
-            else {
-                row += "<td>" + escapeHtml(data[elem]) + "</td>";
-            }
+            row += "<td class=\"" + elem + "\"><span class=\"spinner spinner-xs spinner-inline\"></span></td>";
+        });
+
+        problem.ReadElements(container_elements, 0x4).done(function(data) {
+            container_elements.forEach(function(elem) {
+                var column = $("tr[id*='" + problem.path + "'] td." + elem);
+                column.empty();
+                if (data.hasOwnProperty(elem)) {
+                    column.append(escapeHtml(data[elem].v));
+                }
+            });
         });
 
         row += "<td>" + escapeHtml(problem.Count) + "</td>";
