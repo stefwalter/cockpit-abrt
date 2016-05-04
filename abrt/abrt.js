@@ -44,7 +44,7 @@ $( document ).ready( function() {
     var reportd = reportd_client.proxy('org.freedesktop.reportd.Service', '/org/freedesktop/reportd/Service');
 
     reportd.wait(function() {
-            console.log("reportd proxy: " + this.valid);
+        console.log("reportd proxy: " + this.valid);
     });
 
     /* load all problems */
@@ -54,6 +54,15 @@ $( document ).ready( function() {
             $(session).on("AuthorizationChanged", function(event, new_status) {
                 problems_authorization_changed(new_status);
             });
+
+            if (session.IsAuthorized) {
+                $(".btn-de-authorize").show();
+                $(".btn-authorize").hide();
+            }
+            else {
+                $(".btn-de-authorize").hide();
+                $(".btn-authorize").show();
+            }
         });
 
         load_all_problems();
@@ -69,6 +78,15 @@ $( document ).ready( function() {
             /* TODO: hide the spinner */
             $(".btn-de-authorize").show();
             $(".btn-authorize").hide();
+            if (reportd.valid) {
+                reportd.AuthorizeProblemsSession(0)
+                    .done(function() {
+                        console.log("reportd's Session authorized");
+                    })
+                    .fail(function() {
+                        console.log("reportd's Session NOT-authorized");
+                    });
+            }
         }
         else if (new_status == 2) {
             $(".btn-de-authorize").hide();
@@ -107,11 +125,16 @@ $( document ).ready( function() {
         var problems = $("#problems tbody").append(problem_to_row(problem_proxy));
         if (reportd.valid) {
             var row = problems.children(".problem").last();
-            reportd.GetWorkflows(problem_proxy.path).done(function(args, options) {
-                for (w of args) {
-                    row.find(".dropdown-menu").append(get_btn_dropdown_li(w[1], w[0]));
-                }
-            });
+            reportd.GetWorkflows(problem_proxy.path)
+                .done(function(args, options) {
+                    var dropdown = row.find(".dropdown-menu")
+                    for (w of args) {
+                        dropdown.append(get_btn_dropdown_li(w[1], w[0]));
+                    }
+                })
+                .fail(function(what) {
+                    console.log("Cannot get workflows for '" + problem_proxy.path + "':" + what);
+                });
         }
     }
 
