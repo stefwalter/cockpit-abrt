@@ -44,7 +44,7 @@ $( document ).ready( function() {
     var reportd = reportd_client.proxy('org.freedesktop.reportd.Service', '/org/freedesktop/reportd/Service');
 
     reportd.wait(function() {
-        console.log("reportd proxy: " + this.valid);
+        console.log("reportd proxy: " + reportd.valid);
     });
 
     /* load all problems */
@@ -69,8 +69,8 @@ $( document ).ready( function() {
     });
 
     $(service).on("Crash", function(event, problem_path, uid) {
-        problems_client.proxy('org.freedesktop.Problems2.Entry', problem_path)
-             .wait(function() {add_problem_to_table(this);});
+        var entry = problems_client.proxy('org.freedesktop.Problems2.Entry', problem_path);
+        entry.wait(function() {add_problem_to_table(entry);});
     });
 
     function problems_authorization_changed(new_status) {
@@ -105,7 +105,8 @@ $( document ).ready( function() {
         /* cache problem proxies - without this, cockpit can create only single
          * Entry proxy, all other proxies has the property 'invalid' set to
          * True. */
-        var problems = problems_client.proxies("org.freedesktop.Problems2.Entry", "/org/freedesktop/Problems2/Entry").wait(function() {
+        var problems = problems_client.proxies("org.freedesktop.Problems2.Entry", "/org/freedesktop/Problems2/Entry")
+        problems.wait(function() {
             /* create table rows only for own problems - the problems variable
              * includes proxies for not accessible problems too */
             service.GetProblems(0, {}).done(function(problem_paths, options) {
@@ -556,7 +557,7 @@ $( document ).ready( function() {
                 $(".back-to-browser-btn").hide();
                 $("report-task-progress-spiner").show();
 
-                $(this).on("changed", function(event, data) {
+                $(task).on("changed", function(event, data) {
                     if (data.hasOwnProperty("Status") && data.Status == "FINISHED") {
                         $(".cancel-task-btn").hide();
                         $(".back-to-browser-btn").show();
@@ -564,12 +565,12 @@ $( document ).ready( function() {
                     }
                 });
 
-                $(this).on("Progress", function(event, line) {
+                $(task).on("Progress", function(event, line) {
                     log = line.replace(/(https?[^\s]+)(\s|$)/g, "URL=<a href=\"$1\" target=\"_blank\">$1</a>$2") + "<br/>"
                     $("#report-task-progress-log").append(log);
                 });
 
-                this.Start();
+                task.Start();
             });
         });
     });
