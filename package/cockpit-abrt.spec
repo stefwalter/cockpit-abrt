@@ -2,7 +2,7 @@
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
 Name:		cockpit-abrt
 Version:	0.1
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	ABRT module for Cockpit
 
 Group:		System/Utilities
@@ -15,7 +15,9 @@ BuildArch: noarch
 
 Requires:	cockpit
 Requires:	reportd
-Requires:	abrt-dbus
+Requires:	abrt-dbus >= 2.8.0.44
+Requires:	libreport >= 2.7.0.11
+
 
 %description
 This Cockpit package adds a new item called Problems to the Tools menu. The
@@ -41,5 +43,8 @@ make %{?_smp_mflags}
 %{_datadir}/cockpit/abrt
 
 %changelog
+* Thu May 19 2016 Jakub Filak <jfilak@redhat.com> - 0.1-2
+- Require correct ABRT and libreport version
+
 * Thu May 5 2016 Jakub Filak <jfilak@redhat.com> - 0.1-1
 - Initial packaging
