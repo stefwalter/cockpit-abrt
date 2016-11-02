@@ -1,3 +1,9 @@
+.curtain-abrt {
+    height: 100%;
+    width: 100%;
+    position: fixed;
+}
+
 table
 {
     font-size: 11px;

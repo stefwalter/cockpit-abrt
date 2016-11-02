@@ -44,16 +44,27 @@ $( document ).ready( function() {
     var problems = service.proxy('org.freedesktop.problems', '/org/freedesktop/problems');
 
     /* load all problems */
-    problems.wait(load_problems);
+    problems.wait().then(load_problems, display_curtains);
+
+    function display_curtains(ex) {
+	if (!ex || ex.problem == "not-found")
+	    ex = "The ABRT daemon was not found";
+        $(".curtain-abrt").show();
+        $(".container-fluid").hide();
+        $(".curtain-abrt p").text(cockpit.message(ex));
+    }
 
     function load_problems() {
         problems.GetProblems()
+	    .fail(display_curtains)
             .done(function(args, options) {
                 args.forEach(function(problem_id) {
                     problems.GetProblemData(problem_id)
                         .done(function(problem_data, options) {
                             $("#problems tbody").append(problem_data_to_row(problem_data, problem_id));
                 });
+                $(".curtain-abrt").hide();
+                $(".container-fluid").show();
             });
         });
     }

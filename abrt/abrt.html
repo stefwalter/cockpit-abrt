@@ -5,7 +5,14 @@
     <link href="abrt.css" type="text/css" rel="stylesheet">
 </head>
 <body>
-    <div class="container-fluid">
+    <div class="curtain-abrt blank-slate-pf" hidden>
+      <div class="blank-slate-pf-icon">
+        <div class="fa fa-exclamation-circle"></div>
+      </div>
+      <h1>Couldn't connect to ABRT Daemon</h1>
+      <p></p>
+    </div>
+    <div class="container-fluid page-ct" hidden>
         <div class="panel panel-default">
             <table id="problems" class="table">
                 <thead>
